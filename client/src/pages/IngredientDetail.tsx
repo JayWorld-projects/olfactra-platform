@@ -29,7 +29,7 @@ export default function IngredientDetail() {
   if (loading) return <DashboardLayoutSkeleton />;
 
   return (
-    <DashboardLayout navItems={navItems} currentPath="/library" title="JayLabs Perfumery">
+    <DashboardLayout navItems={navItems} currentPath="/library" title="Olfactra">
       <DetailContent />
     </DashboardLayout>
   );

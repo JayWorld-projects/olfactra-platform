@@ -36,9 +36,9 @@ export default function Home() {
               <Droplets className="size-8 text-primary" />
             </div>
           </div>
-          <h1 className="text-3xl font-serif font-bold text-foreground">JayLabs Perfumery</h1>
+          <h1 className="text-3xl font-serif font-bold text-foreground">Olfactra</h1>
           <p className="text-muted-foreground text-base leading-relaxed">
-            Your personal perfumery workbench. Manage raw materials, build formulas, and explore scent concepts with AI assistance.
+            Composing fragrance. Manage raw materials, build formulas, and explore scent concepts with AI assistance.
           </p>
           <Button
             size="lg"
@@ -57,7 +57,7 @@ export default function Home() {
     <DashboardLayout
       navItems={NAV_ITEMS}
       currentPath="/"
-      title="JayLabs Perfumery"
+      title="Olfactra"
       subtitle="Dashboard"
     >
       <DashboardContent />

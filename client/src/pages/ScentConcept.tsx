@@ -264,7 +264,7 @@ export default function ScentConcept() {
   if (loading) return <DashboardLayoutSkeleton />;
 
   return (
-    <DashboardLayout navItems={navItems} currentPath="/concept" title="JayLabs Perfumery">
+    <DashboardLayout navItems={navItems} currentPath="/concept" title="Olfactra">
       <ScentConceptContent />
     </DashboardLayout>
   );

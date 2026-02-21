@@ -35,7 +35,7 @@ export default function FormulaBuilder() {
   if (loading) return <DashboardLayoutSkeleton />;
 
   return (
-    <DashboardLayout navItems={navItems} currentPath="/formulas" title="JayLabs Perfumery">
+    <DashboardLayout navItems={navItems} currentPath="/formulas" title="Olfactra">
       <BuilderContent />
     </DashboardLayout>
   );
@@ -402,7 +402,7 @@ tr.solvent-row{background:#f0f7f9;font-style:italic}tr.total-row{background:#006
 .footer{margin-top:30px;padding-top:16px;border-top:1px solid #ddd;display:flex;justify-content:space-between;align-items:center}
 .footer-brand{font-family:'Playfair Display',serif;font-size:14px;color:#006778}.footer-note{font-size:10px;color:#999}
 @media print{body{padding:20px}}</style></head><body>
-<div class="header"><div class="brand">JayLabs Perfumery</div><div class="formula-name">${formula.name}</div><div class="date">${now} &bull; Status: ${formula.status === "final" ? "Final" : "Draft"}</div></div>
+<div class="header"><div class="brand">Olfactra</div><div class="formula-name">${formula.name}</div><div class="date">${now} &bull; Status: ${formula.status === "final" ? "Final" : "Draft"}</div></div>
 ${formula.description ? `<div class="description">${formula.description}</div>` : ""}
 <div class="stats-grid">
 <div class="stat-card"><div class="stat-label">Concentrate</div><div class="stat-value">${concentrateWeight.toFixed(3)}g</div></div>
@@ -423,7 +423,7 @@ ${[0,1,2,3,4,5].map(level => {
   return `<div class="pyramid-bar"><span class="pyramid-label">${LONGEVITY_LABELS[level]}</span><div class="pyramid-track"><div class="pyramid-fill" style="width:${Math.max(pct, pct > 0 ? 2 : 0)}%;background:${colors[level]}"></div></div><span class="pyramid-value">${data.weight.toFixed(3)}g (${pct.toFixed(1)}%)</span></div>`;
 }).join("")}
 </div>
-<div class="footer"><div class="footer-brand">JayLabs Perfumery Studio</div><div class="footer-note">Generated on ${now}</div></div>
+<div class="footer"><div class="footer-brand">Olfactra</div><div class="footer-note">Generated on ${now}</div></div>
 </body></html>`;
 
     const printWindow = window.open("", "_blank");

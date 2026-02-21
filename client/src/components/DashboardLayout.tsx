@@ -50,7 +50,7 @@ export default function DashboardLayout({
   children,
   navItems,
   currentPath,
-  title = "JayLabs Perfumery",
+  title = "Olfactra",
   subtitle,
 }: DashboardLayoutProps) {
   const [sidebarWidth, setSidebarWidth] = useState(() => {
@@ -76,10 +76,10 @@ export default function DashboardLayout({
               <Droplets className="size-8 text-primary" />
             </div>
             <h1 className="text-2xl font-serif font-bold tracking-tight text-center text-foreground">
-              JayLabs Perfumery
+              Olfactra
             </h1>
             <p className="text-sm text-muted-foreground text-center max-w-sm leading-relaxed">
-              Your personal perfumery workbench. Sign in to manage ingredients, build formulas, and explore scent concepts.
+              Composing fragrance. Sign in to manage ingredients, build formulas, and explore scent concepts.
             </p>
           </div>
           <Button

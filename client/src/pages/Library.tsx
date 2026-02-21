@@ -23,7 +23,7 @@ export default function Library() {
   if (loading) return <DashboardLayoutSkeleton />;
 
   return (
-    <DashboardLayout navItems={navItems} currentPath="/library" title="JayLabs Perfumery">
+    <DashboardLayout navItems={navItems} currentPath="/library" title="Olfactra">
       <LibraryContent />
     </DashboardLayout>
   );

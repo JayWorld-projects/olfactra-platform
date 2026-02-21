@@ -18,7 +18,7 @@ export default function FormulaCompare() {
   if (loading) return <DashboardLayoutSkeleton />;
 
   return (
-    <DashboardLayout navItems={navItems} currentPath="/formulas" title="JayLabs Perfumery">
+    <DashboardLayout navItems={navItems} currentPath="/formulas" title="Olfactra">
       <FormulaCompareContent />
     </DashboardLayout>
   );

@@ -117,7 +117,7 @@ export default function ImportPage() {
   if (loading) return <DashboardLayoutSkeleton />;
 
   return (
-    <DashboardLayout navItems={navItems} currentPath="/import" title="JayLabs Perfumery">
+    <DashboardLayout navItems={navItems} currentPath="/import" title="Olfactra">
       <ImportContent />
     </DashboardLayout>
   );

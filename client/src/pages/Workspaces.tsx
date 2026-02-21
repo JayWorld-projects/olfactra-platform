@@ -27,7 +27,7 @@ export default function Workspaces() {
   if (!isAuthenticated) return null;
 
   return (
-    <DashboardLayout navItems={navItems} currentPath="/workspaces" title="JayLabs Perfumery" subtitle="Workspaces">
+    <DashboardLayout navItems={navItems} currentPath="/workspaces" title="Olfactra" subtitle="Workspaces">
       <WorkspacesContent />
     </DashboardLayout>
   );

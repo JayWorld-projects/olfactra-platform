@@ -74,3 +74,8 @@
 - [x] Feature: Version history tab in Formula Builder with save/expand/revert/delete
 - [x] Feature: AI ingredient substitution suggestions - suggest similar alternatives from library with match %, cost comparison, and reasoning
 - [x] Feature: Substitution dialog in Formula Builder with one-click swap-in-place functionality
+- [x] Rebrand: Change platform name from "JayLabs Perfumery" to "Olfactra" (all 10 page references updated)
+- [x] Rebrand: Switch from dark theme to white/light background design (light theme with deep purple accents)
+- [x] Rebrand: Upload new Olfactra logo to S3 CDN
+- [x] Rebrand: Update all page references, sidebar, headers, and meta titles to Olfactra
+- [x] Rebrand: Verify text visibility and contrast on light background across all pages (Dashboard, Library, Formulas, Scent Lab, Workspaces)
