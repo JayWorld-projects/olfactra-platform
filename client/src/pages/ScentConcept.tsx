@@ -14,7 +14,7 @@ import { trpc } from "@/lib/trpc";
 import {
   Sparkles, Loader2, Lightbulb, Flame, Droplets, Wind,
   Bath, SprayCan, CloudFog, GlassWater, Save, Check, BookmarkPlus,
-  History, Trash2, Clock, ChevronRight, SaveAll
+  History, Trash2, Clock, ChevronRight, SaveAll, Shuffle, Dices
 } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
@@ -33,12 +33,65 @@ const PRODUCT_TYPES: { key: ProductTypeKey; label: string; icon: React.Component
   { key: "humidifier", label: "Humidifier Oil", icon: CloudFog, color: "text-cyan-400", bgColor: "bg-cyan-400/10", borderColor: "border-cyan-400/30", parseKeys: ["humidifier", "diffuser"] },
 ];
 
-const EXAMPLE_CONCEPTS = [
+const INSPIRATION_PROMPTS = [
+  // Nature & Outdoors
   "A warm summer evening on a Mediterranean terrace, with jasmine blooming on old stone walls and the faint scent of sea salt in the air.",
   "Walking through a cedar forest after rain, with damp earth, moss-covered bark, and a hint of wild berries.",
-  "A cozy winter library with leather-bound books, a crackling fireplace, and a cup of spiced chai.",
   "A fresh spring morning in a Japanese garden with cherry blossoms, green tea, and clean linen drying in the breeze.",
+  "Standing at the edge of a Hawaiian waterfall surrounded by tropical flowers, wet volcanic rock, and mist.",
+  "A lavender field in Provence at golden hour, warm wind carrying honey and dried herbs.",
+  "Deep inside a mossy Pacific Northwest old-growth forest, ferns dripping with morning dew.",
+  "A desert oasis at dusk — warm sand, date palms, cool water, and the first stars appearing.",
+  "Walking barefoot on a Caribbean beach at sunrise, coconut palms, salt air, and driftwood.",
+  "An alpine meadow in full bloom after snowmelt, wildflowers, cold streams, and pine resin.",
+  "A misty Scottish highland morning with heather, peat smoke, and wet wool.",
+  // Memories & Nostalgia
+  "A cozy winter library with leather-bound books, a crackling fireplace, and a cup of spiced chai.",
+  "Grandmother's kitchen on Thanksgiving — cinnamon, clove, baked apples, and buttery pie crust.",
+  "A childhood summer at the lake house — sunscreen, freshly cut grass, and campfire smoke at dusk.",
+  "Christmas morning — fresh pine tree, orange peel, nutmeg, and the warmth of a wool blanket.",
+  "The first warm day of spring when you open all the windows — fresh air, clean cotton, and lilac.",
+  "A rainy afternoon in a Parisian café — espresso, croissants, old wood, and petrichor from the street.",
+  "Late night in a jazz club — bourbon, tobacco leaf, worn velvet, and sandalwood.",
+  "Your first apartment — fresh paint, new books, cheap candles, and takeout.",
+  "A road trip through the American Southwest — sagebrush, red dust, leather seats, and cold cola.",
+  "Saturday morning farmers market — peaches, basil, sourdough bread, and fresh-cut flowers.",
+  // Moods & Emotions
+  "The feeling of confidence before a big night out — something bold, magnetic, and unforgettable.",
+  "Deep relaxation after a spa day — eucalyptus steam, warm stones, and clean skin.",
+  "The excitement of falling in love — something intoxicating, warm, slightly reckless.",
+  "Quiet solitude on a Sunday morning — soft linen, black coffee, a good book, and rain outside.",
+  "The energy of a rooftop party at sunset — champagne, citrus, warm skin, and city lights.",
+  "Meditative calm — temple incense, sandalwood, still water, and deep breathing.",
+  "Cozy hygge vibes — candlelight, cinnamon rolls, cashmere, and a crackling fire.",
+  "Mysterious and seductive — dark plum, oud, black amber, and a whisper of smoke.",
+  // Places & Travel
+  "A Moroccan souk at midday — saffron, cumin, leather, rose water, and cedar.",
+  "A luxury hotel lobby in Dubai — white marble, oud, rose, and chilled champagne.",
+  "An Italian lemon grove on the Amalfi Coast — bright citrus, warm stone, and sea breeze.",
+  "A Tokyo street at night — green tea, yuzu, clean rain on neon-lit pavement.",
+  "An old English garden in June — roses, freshly mowed lawn, and afternoon tea.",
+  "A Balinese temple at dawn — frangipani, incense, tropical rain, and warm stone.",
+  "New York City in autumn — roasted chestnuts, cold air, concrete, and fallen leaves.",
+  "A vineyard in Tuscany during harvest — ripe grapes, sun-warmed earth, and oak barrels.",
+  // Abstract & Artistic
+  "The color gold translated into scent — warm, luminous, rich, and radiant.",
+  "What midnight blue smells like — deep, cool, velvety, with a spark of silver.",
+  "A scent inspired by silk — smooth, slightly sweet, with an elegant coolness.",
+  "The sound of rain translated into fragrance — fresh, rhythmic, soothing, and green.",
+  "A fragrance that captures the feeling of floating in warm water under the stars.",
+  "What a perfect sunset smells like — warm amber light fading into cool violet dusk.",
+  // Seasonal
+  "Peak summer energy — watermelon, sunscreen, hot pavement, and pool water.",
+  "Crisp autumn walk — fallen leaves, apple cider, woodsmoke, and cold air.",
+  "First snowfall of winter — clean ice, wool scarves, pine needles, and hot chocolate.",
+  "Spring awakening — wet soil, hyacinth, fresh rain, and new green leaves.",
 ];
+
+function getRandomPrompts(count: number): string[] {
+  const shuffled = [...INSPIRATION_PROMPTS].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}
 
 interface ParsedSection {
   key: ProductTypeKey;
@@ -228,6 +281,11 @@ function ScentConceptContent() {
   const [showHistory, setShowHistory] = useState(false);
   const [viewingHistoryId, setViewingHistoryId] = useState<number | null>(null);
   const [generatedAt, setGeneratedAt] = useState<Date | null>(null);
+  const [inspirationPrompts, setInspirationPrompts] = useState<string[]>(() => getRandomPrompts(4));
+
+  const shufflePrompts = useCallback(() => {
+    setInspirationPrompts(getRandomPrompts(4));
+  }, []);
   const [, navigate] = useLocation();
 
   const utils = trpc.useUtils();
@@ -689,20 +747,39 @@ function ScentConceptContent() {
           {/* Inspiration */}
           <Card className="bg-card border-border/50">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Lightbulb className="size-4 text-accent" /> Inspiration
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <Dices className="size-4 text-accent" /> Inspiration
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={shufflePrompts}
+                  className="gap-1.5 text-xs text-muted-foreground hover:text-accent h-7 px-2"
+                >
+                  <Shuffle className="size-3.5" /> Shuffle
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Click any prompt to use it, or shuffle for new ideas.</p>
             </CardHeader>
             <CardContent className="space-y-2">
-              {EXAMPLE_CONCEPTS.map((ex, i) => (
+              {inspirationPrompts.map((prompt, i) => (
                 <button
-                  key={i}
-                  className="w-full text-left p-3 rounded-lg border border-border/30 hover:border-primary/40 hover:bg-secondary/50 transition-all text-sm text-muted-foreground hover:text-foreground leading-relaxed"
-                  onClick={() => setConcept(ex)}
+                  key={`${prompt.slice(0, 20)}-${i}`}
+                  className="w-full text-left p-3 rounded-lg border border-border/30 hover:border-accent/40 hover:bg-accent/5 transition-all text-sm text-muted-foreground hover:text-foreground leading-relaxed group"
+                  onClick={() => setConcept(prompt)}
                 >
-                  "{ex.slice(0, 80)}..."
+                  <span className="line-clamp-3">"{prompt}"</span>
                 </button>
               ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={shufflePrompts}
+                className="w-full gap-1.5 text-xs border-border/30 text-muted-foreground hover:text-accent hover:border-accent/40 mt-1"
+              >
+                <Shuffle className="size-3.5" /> Show Me More Ideas
+              </Button>
             </CardContent>
           </Card>
 

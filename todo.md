@@ -52,3 +52,4 @@
 - [x] Feature: Duplicate formula from formula builder (Duplicate button with name dialog)
 - [x] Feature: Formula tagging/labeling system (e.g., "Spring 2026", "Client A") with tag manager dialog
 - [x] Feature: Formula notes/journal with timestamped entries for recording observations
+- [x] Feature: Random inspiration prompt generator on Scent Lab page (46 prompts across 6 categories with shuffle)
