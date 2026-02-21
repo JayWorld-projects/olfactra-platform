@@ -400,6 +400,163 @@ CRITICAL FORMATTING RULES (you MUST follow these exactly):
         return { success: true };
       }),
 
+    generateFromIngredients: protectedProcedure
+      .input(z.object({
+        ingredientIds: z.array(z.number()).min(1),
+        concept: z.string().min(1),
+        productType: z.enum(["perfume", "candle", "lotion", "bodywash", "incense", "bodyspray", "humidifier"]).default("perfume"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const allIngredients = await listIngredients(ctx.user.id);
+        const selectedIngredients = allIngredients.filter(i => input.ingredientIds.includes(i.id));
+        if (selectedIngredients.length === 0) throw new Error("No matching ingredients found");
+
+        const ingredientList = selectedIngredients.map(i =>
+          `- ID:${i.id} "${i.name}" (Category: ${i.category || "N/A"}, Longevity: ${i.longevity ?? "N/A"}/5, Cost/g: $${i.costPerGram || "N/A"}, IFRA Limit: ${i.ifraLimit || "N/A"}%)`
+        ).join("\n");
+
+        const typeDescriptions: Record<string, string> = {
+          perfume: "an Eau de Parfum (EdP) with 15-20% concentration. Target 10-20g concentrate total.",
+          candle: "a candle fragrance blend at 6-10% fragrance load for 454g soy wax.",
+          lotion: "a scented lotion blend at 1-3% fragrance load for 500g total.",
+          bodywash: "a body wash fragrance blend at 1-2% for 500g total.",
+          incense: "an incense blend for stick/cone incense.",
+          bodyspray: "a body spray at 3-5% fragrance load for 100ml total.",
+          humidifier: "a diffuser/humidifier oil blend (10-15ml total).",
+        };
+
+        const prompt = `You are a master perfumer. A client wants to create ${typeDescriptions[input.productType]}
+
+Their creative concept/idea:
+"${input.concept}"
+
+They have selected these specific ingredients to work with (you MUST use ONLY these ingredients, use as many as make sense for the concept):
+${ingredientList}
+
+Create a single well-balanced formula. Return your response as a JSON object with this exact structure:
+{
+  "name": "Creative name for this formula",
+  "description": "Brief poetic description of the scent profile and evolution",
+  "ingredients": [
+    { "ingredientId": <number>, "name": "<ingredient name>", "weight": "<weight in grams as string>", "note": "<brief role explanation>" }
+  ],
+  "solventWeight": "<solvent weight in grams if applicable>",
+  "solvent": "Ethanol",
+  "perfumerNotes": "Detailed explanation of why these ingredients work together for this concept"
+}
+
+IMPORTANT:
+- Use ONLY ingredients from the provided list
+- The ingredientId must match exactly from the list
+- Weights should be realistic for the product type
+- Every weight must be a string number (e.g., "2.500")
+- Include at least 3 ingredients
+- Stay within IFRA limits where specified
+- Return ONLY the JSON object, no markdown fencing`;
+
+        const result = await invokeLLM({
+          messages: [
+            { role: "system", content: "You are a master perfumer. You return ONLY valid JSON objects with no markdown code fences or extra text. You create balanced, safe, and creative formulas." },
+            { role: "user", content: prompt },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "formula_generation",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  name: { type: "string", description: "Creative name for the formula" },
+                  description: { type: "string", description: "Brief poetic description" },
+                  ingredients: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        ingredientId: { type: "number", description: "ID from the ingredient list" },
+                        name: { type: "string", description: "Ingredient name" },
+                        weight: { type: "string", description: "Weight in grams" },
+                        note: { type: "string", description: "Brief role explanation" },
+                      },
+                      required: ["ingredientId", "name", "weight", "note"],
+                      additionalProperties: false,
+                    },
+                  },
+                  solventWeight: { type: "string", description: "Solvent weight in grams" },
+                  solvent: { type: "string", description: "Solvent type" },
+                  perfumerNotes: { type: "string", description: "Detailed explanation" },
+                },
+                required: ["name", "description", "ingredients", "solventWeight", "solvent", "perfumerNotes"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const rawContent = result.choices[0]?.message?.content;
+        if (!rawContent || typeof rawContent !== "string") throw new Error("AI generation failed");
+
+        try {
+          const parsed = JSON.parse(rawContent);
+          // Build lookup maps for matching
+          const validIds = new Set(input.ingredientIds);
+          const nameToId = new Map(selectedIngredients.map(i => [i.name.toLowerCase().trim(), i.id]));
+          // Fix ingredient IDs: try direct match first, then name-based fallback
+          parsed.ingredients = parsed.ingredients.map((ing: any) => {
+            if (validIds.has(ing.ingredientId)) return ing;
+            // Try name-based match
+            const matchedId = nameToId.get(ing.name?.toLowerCase().trim());
+            if (matchedId) return { ...ing, ingredientId: matchedId };
+            // Try partial name match
+            const entries = Array.from(nameToId.entries());
+            for (let i = 0; i < entries.length; i++) {
+              const [name, id] = entries[i];
+              if (name.includes(ing.name?.toLowerCase().trim()) || ing.name?.toLowerCase().trim().includes(name)) {
+                return { ...ing, ingredientId: id };
+              }
+            }
+            return null;
+          }).filter(Boolean);
+          return parsed;
+        } catch {
+          throw new Error("Failed to parse AI response");
+        }
+      }),
+
+    saveGeneratedFormula: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        description: z.string().optional(),
+        solvent: z.string().optional(),
+        solventWeight: z.string().optional(),
+        ingredients: z.array(z.object({
+          ingredientId: z.number(),
+          weight: z.string(),
+          note: z.string().optional(),
+        })),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const formulaId = await createFormula({
+          name: input.name,
+          description: input.description,
+          userId: ctx.user.id,
+          solvent: input.solvent,
+          solventWeight: input.solventWeight,
+        });
+        let addedCount = 0;
+        for (const item of input.ingredients) {
+          await addFormulaIngredient({
+            formulaId,
+            ingredientId: item.ingredientId,
+            weight: item.weight,
+            note: item.note,
+          });
+          addedCount++;
+        }
+        return { formulaId, addedCount };
+      }),
+
     saveFromConcept: protectedProcedure
       .input(z.object({
         name: z.string().min(1),

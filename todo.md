@@ -62,3 +62,9 @@
 - [x] Feature: Ingredient cost tracking per formula - cost breakdown showing total formula cost based on weights and cost-per-gram
 - [x] Feature: Cost breakdown tab in Formula Builder with summary cards, bottle estimates, per-ingredient table, and category breakdown
 - [x] Fix: Handle N/A display for ingredients missing cost data in cost breakdown
+- [x] Feature: New formula creation flow - select multiple ingredients at once (no weights)
+- [x] Feature: Enter a scent idea/concept for the selected ingredients
+- [x] Feature: AI auto-generate formula with weights from selected ingredients + idea
+- [x] Feature: Save generated formula and continue generating more variations from same idea
+- [x] Feature: Multi-step wizard UI (pick ingredients → enter idea → generate → save/regenerate)
+- [x] Fix: AI ingredient ID matching with name-based fallback for reliable formula generation

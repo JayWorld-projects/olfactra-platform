@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavItems } from "./Home";
 import { trpc } from "@/lib/trpc";
-import { FlaskConical, Plus, Loader2, Copy, GitCompareArrows, X } from "lucide-react";
+import { FlaskConical, Plus, Loader2, Copy, GitCompareArrows, X, Sparkles } from "lucide-react";
+import FormulaWizard from "@/components/FormulaWizard";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -37,6 +38,7 @@ function FormulaListContent() {
   const [description, setDescription] = useState("");
   const [compareMode, setCompareMode] = useState(false);
   const [compareSelection, setCompareSelection] = useState<number[]>([]);
+  const [showWizard, setShowWizard] = useState(false);
 
   const { data: formulas, isLoading } = trpc.formula.list.useQuery();
   const utils = trpc.useUtils();
@@ -138,6 +140,9 @@ function FormulaListContent() {
                   <GitCompareArrows className="size-4" /> Compare
                 </Button>
               )}
+              <Button variant="outline" onClick={() => setShowWizard(true)} className="border-accent/50 text-accent hover:bg-accent/10">
+                <Sparkles className="size-4" /> AI Generate
+              </Button>
               <Button onClick={() => setShowCreate(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
                 <Plus className="size-4" /> New Formula
               </Button>
@@ -274,6 +279,16 @@ function FormulaListContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* AI Formula Wizard */}
+      <FormulaWizard
+        open={showWizard}
+        onOpenChange={setShowWizard}
+        onFormulaSaved={(formulaId) => {
+          utils.formula.list.invalidate();
+          setLocation(`/formulas/${formulaId}`);
+        }}
+      />
 
       {/* Clone Dialog */}
       <Dialog open={showClone} onOpenChange={(open) => { setShowClone(open); if (!open) { setName(""); setCloneSourceId(null); setCloneSourceName(""); } }}>
