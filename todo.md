@@ -21,3 +21,4 @@
 - [x] Ingredient information retrieval (AI-powered deep info on demand)
 - [x] Seed database with user's 282-ingredient JayLabs library from TSV
 - [x] Vitest unit tests for server-side procedures
+- [x] Fix: User unable to log into the site
