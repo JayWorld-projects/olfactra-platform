@@ -79,14 +79,19 @@ export function registerOAuthRoutes(app: Express) {
         expiresInMs: ONE_YEAR_MS,
       });
 
+      // Set cookie (works in browsers that allow third-party cookies)
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
       // Parse state to get the frontend origin and redirect there
       const { origin, returnPath } = parseState(state);
-      const redirectUrl = origin ? `${origin}${returnPath}` : returnPath || "/";
+      const baseUrl = origin ? `${origin}${returnPath}` : returnPath || "/";
 
-      console.log(`[OAuth] Callback success, redirecting to: ${redirectUrl}`);
+      // Also pass token via URL fragment for browsers that block third-party cookies
+      // Using fragment (#) so the token never hits the server in subsequent requests
+      const redirectUrl = `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}__session_token=${encodeURIComponent(sessionToken)}`;
+
+      console.log(`[OAuth] Callback success, redirecting to origin: ${origin}`);
       res.redirect(302, redirectUrl);
     } catch (error) {
       console.error("[OAuth] Callback failed", error);

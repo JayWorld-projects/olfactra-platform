@@ -8,6 +8,22 @@ import App from "./App";
 import { getLoginUrl } from "./const";
 import "./index.css";
 
+const SESSION_TOKEN_KEY = "app_session_token";
+
+// Capture session token from URL (set by OAuth callback for browsers blocking third-party cookies)
+function captureSessionToken() {
+  const url = new URL(window.location.href);
+  const token = url.searchParams.get("__session_token");
+  if (token) {
+    localStorage.setItem(SESSION_TOKEN_KEY, token);
+    // Clean the URL by removing the token parameter
+    url.searchParams.delete("__session_token");
+    window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+  }
+}
+
+captureSessionToken();
+
 const queryClient = new QueryClient();
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
@@ -18,6 +34,8 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   if (!isUnauthorized) return;
 
+  // Clear stored token on auth failure
+  localStorage.removeItem(SESSION_TOKEN_KEY);
   window.location.href = getLoginUrl();
 };
 
@@ -43,8 +61,15 @@ const trpcClient = trpc.createClient({
       url: "/api/trpc",
       transformer: superjson,
       fetch(input, init) {
+        const headers = new Headers((init as any)?.headers);
+        // Add Authorization header from localStorage as fallback for blocked cookies
+        const token = localStorage.getItem(SESSION_TOKEN_KEY);
+        if (token) {
+          headers.set("Authorization", `Bearer ${token}`);
+        }
         return globalThis.fetch(input, {
           ...(init ?? {}),
+          headers,
           credentials: "include",
         });
       },

@@ -36,6 +36,8 @@ export function useAuth(options?: UseAuthOptions) {
       }
       throw error;
     } finally {
+      // Clear localStorage session token (used as fallback for blocked cookies)
+      localStorage.removeItem("app_session_token");
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
     }

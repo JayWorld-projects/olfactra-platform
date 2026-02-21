@@ -22,3 +22,4 @@
 - [x] Seed database with user's 282-ingredient JayLabs library from TSV
 - [x] Vitest unit tests for server-side procedures
 - [x] Fix: User unable to log into the site
+- [x] Fix: Login loop persists after first OAuth fix - cookie not being retained by browser (added localStorage token fallback)
