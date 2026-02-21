@@ -59,3 +59,6 @@
 - [x] Feature: Workspace management page with ingredient selection UI
 - [x] Feature: Workspace switcher in sidebar/header for quick context switching
 - [x] Feature: Filter Library, Formula Builder, and Scent Lab by active workspace
+- [x] Feature: Ingredient cost tracking per formula - cost breakdown showing total formula cost based on weights and cost-per-gram
+- [x] Feature: Cost breakdown tab in Formula Builder with summary cards, bottle estimates, per-ingredient table, and category breakdown
+- [x] Fix: Handle N/A display for ingredients missing cost data in cost breakdown
