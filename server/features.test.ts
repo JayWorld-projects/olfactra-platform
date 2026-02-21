@@ -356,15 +356,55 @@ describe("formula router", () => {
     // Should not throw
   });
 
-  it("generates scent concept suggestions", async () => {
+  it("generates scent concept suggestions with selected types", async () => {
     const ctx = createAuthContext();
     const caller = appRouter.createCaller(ctx);
     const result = await caller.formula.scentConcept({
       concept: "A warm summer evening on a Mediterranean terrace with jasmine and sea salt",
+      selectedTypes: ["perfume", "candle"],
     });
     expect(result.content).toBeDefined();
     expect(typeof result.content).toBe("string");
     expect(result.content.length).toBeGreaterThan(0);
+    expect(result.selectedTypes).toEqual(["perfume", "candle"]);
+  });
+
+  it("generates scent concept for a single product type", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.formula.scentConcept({
+      concept: "Fresh ocean breeze",
+      selectedTypes: ["bodyspray"],
+    });
+    expect(result.content).toBeDefined();
+    expect(result.selectedTypes).toEqual(["bodyspray"]);
+  });
+
+  it("rejects scent concept with empty selectedTypes", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    await expect(
+      caller.formula.scentConcept({ concept: "Test", selectedTypes: [] })
+    ).rejects.toThrow();
+  });
+
+  it("saves a generated recipe to formulas", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.formula.saveFromConcept({
+      name: "Mediterranean Candle",
+      description: "Generated from Scent Lab",
+      productType: "Candle",
+      ingredients: [
+        { ingredientName: "Linalool", weight: "2.500" },
+        { ingredientName: "Vanillin", weight: "1.000" },
+        { ingredientName: "NonExistentIngredient", weight: "0.500" },
+      ],
+    });
+    expect(result.formulaId).toBeDefined();
+    expect(typeof result.formulaId).toBe("number");
+    expect(result.addedCount).toBe(2); // Only Linalool and Vanillin match
+    expect(result.totalRequested).toBe(3);
   });
 
   it("rejects unauthenticated access to formula list", async () => {
@@ -377,6 +417,18 @@ describe("formula router", () => {
     const ctx = createAuthContext();
     const caller = appRouter.createCaller(ctx);
     await expect(caller.formula.create({ name: "" })).rejects.toThrow();
+  });
+
+  it("rejects unauthenticated saveFromConcept", async () => {
+    const ctx = createUnauthContext();
+    const caller = appRouter.createCaller(ctx);
+    await expect(
+      caller.formula.saveFromConcept({
+        name: "Test",
+        productType: "Perfume",
+        ingredients: [{ ingredientName: "Linalool", weight: "1.000" }],
+      })
+    ).rejects.toThrow();
   });
 });
 

@@ -34,3 +34,6 @@
 - [x] Feature: Multi-product recipe generation from scent concepts (perfume, candles, lotions, body wash, incense, body sprays, humidifier oils)
 - [x] Update AI prompt to generate recipes for all 7 product types
 - [x] Redesign Scent Lab UI to display tabbed/sectioned multi-product results
+- [x] Feature: Selectable product types before generation (only generate what you want)
+- [x] Feature: Proper post-generation filtering (All shows everything, clicking a type shows only that recipe)
+- [x] Feature: Save AI-generated recipes to main formula list

@@ -213,12 +213,29 @@ Please provide the following information in a well-structured format:
       .mutation(({ input }) => removeFormulaIngredient(input.id)),
 
     scentConcept: protectedProcedure
-      .input(z.object({ concept: z.string().min(1) }))
+      .input(z.object({
+        concept: z.string().min(1),
+        selectedTypes: z.array(z.enum(["perfume", "candle", "lotion", "bodywash", "incense", "bodyspray", "humidifier"])).min(1),
+      }))
       .mutation(async ({ ctx, input }) => {
         const allIngredients = await listIngredients(ctx.user.id);
         const ingredientList = allIngredients.map(i =>
           `- ${i.name} (Category: ${i.category || "N/A"}, Longevity: ${i.longevity ?? "N/A"}/5, IFRA Limit: ${i.ifraLimit || "N/A"}%)`
         ).join("\n");
+
+        const typePrompts: Record<string, string> = {
+          perfume: `## PERFUME (Eau de Parfum)\nCreate 2 formula variations:\n- List ingredients with weights in grams (10-20g concentrate total)\n- Suggest ethanol solvent weight for EdP concentration (~15-20%)\n- Describe scent evolution (top → heart → base)\n- Stay within IFRA limits`,
+          candle: `## CANDLE\nCreate 1 candle fragrance recipe:\n- Specify fragrance load percentage (typically 6-10% of wax weight)\n- Base it on 1 lb (454g) of soy wax\n- List the fragrance oil blend with weights in grams\n- Note flash point considerations\n- Suggest wick size and burn notes`,
+          lotion: `## LOTION / BODY CREAM\nCreate 1 scented lotion recipe:\n- Specify fragrance load (typically 1-3% of total weight)\n- Base it on 500g total batch\n- List the fragrance blend with weights in grams\n- Note any skin-safe usage limits (IFRA Category 5A)\n- Suggest a carrier/base recommendation`,
+          bodywash: `## BODY WASH / SHOWER GEL\nCreate 1 scented body wash recipe:\n- Specify fragrance load (typically 1-2% of total weight)\n- Base it on 500g total batch\n- List the fragrance blend with weights in grams\n- Note which ingredients perform well in wash-off products\n- Consider top-heavy composition for shower impact`,
+          incense: `## INCENSE\nCreate 1 incense blend recipe:\n- Specify the blend for stick or cone incense\n- List ingredients with weights in grams for a small batch\n- Note which materials are suitable for combustion\n- Suggest a binder (e.g., makko powder) and proportions\n- Describe the smoke character`,
+          bodyspray: `## BODY SPRAY / BODY MIST\nCreate 1 body spray recipe:\n- Specify fragrance load (typically 3-5% of total)\n- Base it on 100ml total\n- List the fragrance blend with weights in grams\n- Use a lighter, fresher interpretation of the concept\n- Note alcohol/water ratio`,
+          humidifier: `## HUMIDIFIER / DIFFUSER OIL\nCreate 1 essential/fragrance oil blend for humidifiers:\n- List ingredients with drops or grams for a small blend (10-15ml total)\n- Note which materials are water-soluble or suitable for ultrasonic diffusers\n- Suggest usage rate (drops per water tank fill)\n- Consider room-filling projection and safety for enclosed spaces`,
+        };
+
+        const selectedPrompts = input.selectedTypes.map(t => typePrompts[t]).join("\n\n---\n\n");
+        const typeCount = input.selectedTypes.length;
+        const typeLabel = typeCount === 7 ? "ALL SEVEN" : typeCount.toString();
 
         const prompt = `You are a master perfumer and scent formulator with expertise across multiple product categories. A client describes a scent concept:
 
@@ -227,63 +244,11 @@ Please provide the following information in a well-structured format:
 Here is the client's available ingredient library (fragrance raw materials):
 ${ingredientList}
 
-Using ONLY ingredients from the library above, create complete recipes for ALL SEVEN of the following product types. Each recipe should capture the described scent concept adapted to that product's requirements.
+Using ONLY ingredients from the library above, create complete recipes for the following ${typeLabel} product type${typeCount > 1 ? "s" : ""}. Each recipe should capture the described scent concept adapted to that product's requirements.
 
 ---
 
-## 1. PERFUME (Eau de Parfum)
-Create 2 formula variations:
-- List ingredients with weights in grams (10-20g concentrate total)
-- Suggest ethanol solvent weight for EdP concentration (~15-20%)
-- Describe scent evolution (top → heart → base)
-- Stay within IFRA limits
-
-## 2. CANDLE
-Create 1 candle fragrance recipe:
-- Specify fragrance load percentage (typically 6-10% of wax weight)
-- Base it on 1 lb (454g) of soy wax
-- List the fragrance oil blend with weights in grams
-- Note flash point considerations
-- Suggest wick size and burn notes
-
-## 3. LOTION / BODY CREAM
-Create 1 scented lotion recipe:
-- Specify fragrance load (typically 1-3% of total weight)
-- Base it on 500g total batch
-- List the fragrance blend with weights in grams
-- Note any skin-safe usage limits (IFRA Category 5A)
-- Suggest a carrier/base recommendation
-
-## 4. BODY WASH / SHOWER GEL
-Create 1 scented body wash recipe:
-- Specify fragrance load (typically 1-2% of total weight)
-- Base it on 500g total batch
-- List the fragrance blend with weights in grams
-- Note which ingredients perform well in wash-off products
-- Consider top-heavy composition for shower impact
-
-## 5. INCENSE
-Create 1 incense blend recipe:
-- Specify the blend for stick or cone incense
-- List ingredients with weights in grams for a small batch
-- Note which materials are suitable for combustion
-- Suggest a binder (e.g., makko powder) and proportions
-- Describe the smoke character
-
-## 6. BODY SPRAY / BODY MIST
-Create 1 body spray recipe:
-- Specify fragrance load (typically 3-5% of total)
-- Base it on 100ml total
-- List the fragrance blend with weights in grams
-- Use a lighter, fresher interpretation of the concept
-- Note alcohol/water ratio
-
-## 7. HUMIDIFIER / DIFFUSER OIL
-Create 1 essential/fragrance oil blend for humidifiers:
-- List ingredients with drops or grams for a small blend (10-15ml total)
-- Note which materials are water-soluble or suitable for ultrasonic diffusers
-- Suggest usage rate (drops per water tank fill)
-- Consider room-filling projection and safety for enclosed spaces
+${selectedPrompts}
 
 ---
 
@@ -301,7 +266,42 @@ Format with clear markdown headers (## for product type, ### for recipe name). U
             { role: "user", content: prompt },
           ],
         });
-        return { content: result.choices[0]?.message?.content || "Unable to generate suggestions." };
+        return { content: result.choices[0]?.message?.content || "Unable to generate suggestions.", selectedTypes: input.selectedTypes };
+      }),
+
+    saveFromConcept: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        description: z.string().optional(),
+        productType: z.string(),
+        ingredients: z.array(z.object({
+          ingredientName: z.string(),
+          weight: z.string(),
+          note: z.string().optional(),
+        })),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const allIngredients = await listIngredients(ctx.user.id);
+        const formulaId = await createFormula({
+          name: input.name,
+          description: input.description || `Generated from Scent Lab (${input.productType})`,
+          userId: ctx.user.id,
+        });
+
+        let addedCount = 0;
+        for (const item of input.ingredients) {
+          const match = allIngredients.find(i => i.name.toLowerCase() === item.ingredientName.toLowerCase());
+          if (match) {
+            await addFormulaIngredient({
+              formulaId,
+              ingredientId: match.id,
+              weight: item.weight,
+              note: item.note,
+            });
+            addedCount++;
+          }
+        }
+        return { formulaId, addedCount, totalRequested: input.ingredients.length };
       }),
   }),
 });
