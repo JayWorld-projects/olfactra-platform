@@ -1254,6 +1254,149 @@ ${[0,1,2,3,4,5].map(level => {
             </Card>
           </div>
         </TabsContent>
+        {/* Cost Breakdown Tab */}
+        <TabsContent value="costs">
+          <div className="space-y-4">
+            {/* Cost Summary Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <Card className="bg-card border-border/50">
+                <CardContent className="pt-3 pb-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Material Cost</p>
+                  <p className="text-lg font-semibold tabular-nums text-accent">${totalCost.toFixed(2)}</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-card border-border/50">
+                <CardContent className="pt-3 pb-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Cost per Gram</p>
+                  <p className="text-lg font-semibold tabular-nums text-foreground">${costBreakdownData.costPerGramFormula.toFixed(4)}</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-card border-border/50">
+                <CardContent className="pt-3 pb-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Cost per mL (est.)</p>
+                  <p className="text-lg font-semibold tabular-nums text-foreground">${costBreakdownData.costPerMl.toFixed(4)}</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-card border-border/50">
+                <CardContent className="pt-3 pb-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Data Coverage</p>
+                  <p className="text-lg font-semibold tabular-nums text-foreground">
+                    {costBreakdownData.ingredientsWithCost}/{costBreakdownData.ingredientsWithCost + costBreakdownData.ingredientsWithoutCost}
+                  </p>
+                  {costBreakdownData.ingredientsWithoutCost > 0 && (
+                    <p className="text-[9px] text-amber-400 flex items-center gap-1 mt-0.5">
+                      <Info className="size-3" />{costBreakdownData.ingredientsWithoutCost} missing cost data
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Bottle Cost Estimates */}
+            <Card className="bg-card border-border/50">
+              <CardHeader className="py-3">
+                <CardTitle className="text-base flex items-center gap-2"><TrendingUp className="size-4 text-primary" /> Bottle Cost Estimates</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground mb-3">Estimated material cost per bottle at current concentration ({concentrationPercent.toFixed(1)}%). Based on ~0.85 g/mL density for alcohol-based fragrances.</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { size: "30 mL", cost: costBreakdownData.costFor30ml },
+                    { size: "50 mL", cost: costBreakdownData.costFor50ml },
+                    { size: "100 mL", cost: costBreakdownData.costFor100ml },
+                  ].map(bottle => (
+                    <div key={bottle.size} className="bg-secondary/50 rounded-lg p-3 text-center">
+                      <p className="text-xs text-muted-foreground">{bottle.size}</p>
+                      <p className="text-xl font-bold tabular-nums text-accent">${bottle.cost.toFixed(2)}</p>
+                      <p className="text-[9px] text-muted-foreground">materials only</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Per-Ingredient Cost Table */}
+            <Card className="bg-card border-border/50">
+              <CardHeader className="py-3">
+                <CardTitle className="text-base flex items-center gap-2"><BarChart3 className="size-4 text-primary" /> Ingredient Cost Breakdown</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {costBreakdownData.items.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">No ingredients yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-border/50">
+                          <TableHead className="text-muted-foreground">Ingredient</TableHead>
+                          <TableHead className="text-muted-foreground">Category</TableHead>
+                          <TableHead className="text-right text-muted-foreground">Weight (g)</TableHead>
+                          <TableHead className="text-right text-muted-foreground">$/gram</TableHead>
+                          <TableHead className="text-right text-muted-foreground">Cost</TableHead>
+                          <TableHead className="text-right text-muted-foreground">% of Total</TableHead>
+                          <TableHead className="w-40"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {costBreakdownData.items.map(item => {
+                          const pctOfCost = totalCost > 0 ? (item.totalCost / totalCost) * 100 : 0;
+                          const barWidth = costBreakdownData.maxItemCost > 0 ? (item.totalCost / costBreakdownData.maxItemCost) * 100 : 0;
+                          return (
+                            <TableRow key={item.id} className="border-border/30">
+                              <TableCell>
+                                <span className="font-medium text-sm text-foreground">{item.name}</span>
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground">{item.category}</TableCell>
+                              <TableCell className="text-right text-sm tabular-nums">{item.weight.toFixed(3)}</TableCell>
+                              <TableCell className="text-right text-sm tabular-nums">
+                                {item.hasCostData ? `$${item.costPerGram.toFixed(4)}` : <span className="text-amber-400 text-xs">N/A</span>}
+                              </TableCell>
+                              <TableCell className="text-right text-sm tabular-nums text-accent font-medium">
+                                {item.hasCostData ? `$${item.totalCost.toFixed(2)}` : "—"}
+                              </TableCell>
+                              <TableCell className="text-right text-sm tabular-nums">{item.hasCostData ? `${pctOfCost.toFixed(1)}%` : <span className="text-muted-foreground">—</span>}</TableCell>
+                              <TableCell>
+                                <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                                  <div className="h-full rounded-full bg-accent/70 transition-all" style={{ width: `${barWidth}%` }} />
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Category Cost Breakdown */}
+            <Card className="bg-card border-border/50">
+              <CardHeader className="py-3">
+                <CardTitle className="text-base">Cost by Category</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {costBreakdownData.categoryList.map(([cat, data]) => {
+                  const pct = totalCost > 0 ? (data.cost / totalCost) * 100 : 0;
+                  const barWidth = costBreakdownData.maxCatCost > 0 ? (data.cost / costBreakdownData.maxCatCost) * 100 : 0;
+                  const color = CATEGORY_COLORS[cat] || "#888";
+                  return (
+                    <div key={cat} className="space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium">{cat} <span className="text-xs text-muted-foreground">({data.items} ingredient{data.items !== 1 ? "s" : ""})</span></span>
+                        <span className="tabular-nums text-accent">${data.cost.toFixed(2)} <span className="text-muted-foreground text-xs">({pct.toFixed(1)}%)</span></span>
+                      </div>
+                      <div className="h-3 bg-secondary rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all" style={{ width: `${Math.max(barWidth, barWidth > 0 ? 1 : 0)}%`, backgroundColor: color }} />
+                      </div>
+                    </div>
+                  );
+                })}
+                {costBreakdownData.categoryList.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">No ingredients yet.</p>}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* ─── Dialogs ─── */}
