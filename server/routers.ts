@@ -220,26 +220,84 @@ Please provide the following information in a well-structured format:
           `- ${i.name} (Category: ${i.category || "N/A"}, Longevity: ${i.longevity ?? "N/A"}/5, IFRA Limit: ${i.ifraLimit || "N/A"}%)`
         ).join("\n");
 
-        const prompt = `You are a master perfumer. A client describes a scent concept:
+        const prompt = `You are a master perfumer and scent formulator with expertise across multiple product categories. A client describes a scent concept:
 
 "${input.concept}"
 
-Here is the client's available ingredient library:
+Here is the client's available ingredient library (fragrance raw materials):
 ${ingredientList}
 
-Based on this concept and ONLY using ingredients from the library above, create 2-3 formula suggestions. For each formula:
+Using ONLY ingredients from the library above, create complete recipes for ALL SEVEN of the following product types. Each recipe should capture the described scent concept adapted to that product's requirements.
 
-1. Give it a creative name
-2. List the ingredients with suggested weights in grams (totaling around 10-20g concentrate)
-3. Suggest a solvent weight (ethanol) for an EdP concentration (~15-20%)
-4. Explain your reasoning for each ingredient choice
-5. Describe the expected scent profile and evolution (top → heart → base)
+---
 
-Format each formula clearly with ingredient names and weights. Stay within IFRA limits where specified.`;
+## 1. PERFUME (Eau de Parfum)
+Create 2 formula variations:
+- List ingredients with weights in grams (10-20g concentrate total)
+- Suggest ethanol solvent weight for EdP concentration (~15-20%)
+- Describe scent evolution (top → heart → base)
+- Stay within IFRA limits
+
+## 2. CANDLE
+Create 1 candle fragrance recipe:
+- Specify fragrance load percentage (typically 6-10% of wax weight)
+- Base it on 1 lb (454g) of soy wax
+- List the fragrance oil blend with weights in grams
+- Note flash point considerations
+- Suggest wick size and burn notes
+
+## 3. LOTION / BODY CREAM
+Create 1 scented lotion recipe:
+- Specify fragrance load (typically 1-3% of total weight)
+- Base it on 500g total batch
+- List the fragrance blend with weights in grams
+- Note any skin-safe usage limits (IFRA Category 5A)
+- Suggest a carrier/base recommendation
+
+## 4. BODY WASH / SHOWER GEL
+Create 1 scented body wash recipe:
+- Specify fragrance load (typically 1-2% of total weight)
+- Base it on 500g total batch
+- List the fragrance blend with weights in grams
+- Note which ingredients perform well in wash-off products
+- Consider top-heavy composition for shower impact
+
+## 5. INCENSE
+Create 1 incense blend recipe:
+- Specify the blend for stick or cone incense
+- List ingredients with weights in grams for a small batch
+- Note which materials are suitable for combustion
+- Suggest a binder (e.g., makko powder) and proportions
+- Describe the smoke character
+
+## 6. BODY SPRAY / BODY MIST
+Create 1 body spray recipe:
+- Specify fragrance load (typically 3-5% of total)
+- Base it on 100ml total
+- List the fragrance blend with weights in grams
+- Use a lighter, fresher interpretation of the concept
+- Note alcohol/water ratio
+
+## 7. HUMIDIFIER / DIFFUSER OIL
+Create 1 essential/fragrance oil blend for humidifiers:
+- List ingredients with drops or grams for a small blend (10-15ml total)
+- Note which materials are water-soluble or suitable for ultrasonic diffusers
+- Suggest usage rate (drops per water tank fill)
+- Consider room-filling projection and safety for enclosed spaces
+
+---
+
+For EACH product type:
+- Give the recipe a creative name
+- List all ingredients with exact weights/measurements
+- Explain your ingredient choices briefly
+- Include any safety notes or tips specific to that product type
+
+Format with clear markdown headers (## for product type, ### for recipe name). Use tables for ingredient lists where appropriate.`;
 
         const result = await invokeLLM({
           messages: [
-            { role: "system", content: "You are a master perfumer with decades of experience creating fine fragrances. You understand scent families, accords, and how materials interact. Always suggest formulas that are balanced and wearable." },
+            { role: "system", content: "You are a master perfumer and product formulator with decades of experience creating fragrances for perfumes, candles, body care, incense, and home fragrance products. You understand how fragrance materials behave differently across product types — combustion for incense, wash-off for body wash, skin safety for lotions, and air diffusion for humidifiers. Always create balanced, safe, and effective formulas. Use markdown formatting with clear headers and tables." },
             { role: "user", content: prompt },
           ],
         });

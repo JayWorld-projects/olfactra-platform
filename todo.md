@@ -31,3 +31,6 @@
 - [x] Feature: Favorites/Frequently Used section on Library page with star toggle and quick-access panel
 - [x] Feature: PDF export for formulas with JayLabs branding
 - [x] Feature: Batch inventory update mode on Library page for bulk stock quantity editing
+- [x] Feature: Multi-product recipe generation from scent concepts (perfume, candles, lotions, body wash, incense, body sprays, humidifier oils)
+- [x] Update AI prompt to generate recipes for all 7 product types
+- [x] Redesign Scent Lab UI to display tabbed/sectioned multi-product results
