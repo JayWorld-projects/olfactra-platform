@@ -1471,6 +1471,130 @@ Return JSON:
         return allIngredients.filter(i => ingredientIds.includes(i.id));
       }),
   }),
+
+  version: router({
+    list: protectedProcedure
+      .input(z.object({ formulaId: z.number() }))
+      .query(({ input }) => listFormulaVersions(input.formulaId)),
+
+    get: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(({ input }) => getFormulaVersion(input.id)),
+
+    create: protectedProcedure
+      .input(z.object({ formulaId: z.number(), label: z.string().optional() }))
+      .mutation(({ ctx, input }) => createFormulaVersion(input.formulaId, ctx.user.id, input.label)),
+
+    revert: protectedProcedure
+      .input(z.object({ formulaId: z.number(), versionId: z.number() }))
+      .mutation(({ ctx, input }) => revertFormulaToVersion(input.formulaId, input.versionId, ctx.user.id)),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(({ input }) => deleteFormulaVersion(input.id)),
+  }),
+
+  substitution: router({
+    suggest: protectedProcedure
+      .input(z.object({
+        ingredientId: z.number(),
+        ingredientName: z.string(),
+        formulaId: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const allIngredients = await listIngredients(ctx.user.id);
+        const formulaItems = await getFormulaIngredients(input.formulaId);
+        const currentIngredient = allIngredients.find(i => i.id === input.ingredientId);
+        if (!currentIngredient) throw new Error("Ingredient not found");
+
+        // Exclude ingredients already in the formula
+        const formulaIngIds = new Set(formulaItems.map(fi => fi.ingredientId));
+        const candidates = allIngredients.filter(i => !formulaIngIds.has(i.id));
+
+        const candidateList = candidates.map(i =>
+          `- ID:${i.id} | ${i.name} | Category: ${i.category || "N/A"} | Longevity: ${i.longevity ?? "N/A"}/5 | Cost: $${i.costPerGram || "N/A"}/g`
+        ).join("\n");
+
+        const prompt = `You are an expert perfumer. I need substitution suggestions for this ingredient in a formula:
+
+Current ingredient: ${currentIngredient.name}
+- Category: ${currentIngredient.category || "N/A"}
+- Longevity: ${currentIngredient.longevity ?? "N/A"}/5
+- Cost: $${currentIngredient.costPerGram || "N/A"}/g
+- Description: ${currentIngredient.description || "N/A"}
+
+Available ingredients in the user's library (not already in this formula):
+${candidateList}
+
+Suggest up to 5 substitutes from the available list. For each, explain:
+1. Why it's a good substitute (olfactory similarity, functional role)
+2. How it differs (what changes in the scent profile)
+3. Whether it's a cost-effective swap
+
+Return JSON:
+{
+  "suggestions": [
+    {
+      "ingredientId": <number>,
+      "name": "<ingredient name>",
+      "similarity": <number 1-100>,
+      "reason": "<why this is a good substitute>",
+      "difference": "<how the scent will change>",
+      "costComparison": "cheaper" | "similar" | "more expensive"
+    }
+  ]
+}`;
+
+        const result = await invokeLLM({
+          messages: [
+            { role: "system", content: "You are an expert perfumer. Return only valid JSON." },
+            { role: "user", content: prompt },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "substitution_suggestions",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  suggestions: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        ingredientId: { type: "integer" },
+                        name: { type: "string" },
+                        similarity: { type: "integer" },
+                        reason: { type: "string" },
+                        difference: { type: "string" },
+                        costComparison: { type: "string", enum: ["cheaper", "similar", "more expensive"] },
+                      },
+                      required: ["ingredientId", "name", "similarity", "reason", "difference", "costComparison"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ["suggestions"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const rawContent = result.choices[0]?.message?.content;
+        const content = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent) || "{}";
+        try {
+          const parsed = JSON.parse(content);
+          // Validate ingredient IDs exist
+          const validIds = new Set(candidates.map(c => c.id));
+          parsed.suggestions = (parsed.suggestions || []).filter((s: any) => validIds.has(s.ingredientId));
+          return parsed;
+        } catch {
+          return { suggestions: [] };
+        }
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

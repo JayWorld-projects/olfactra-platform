@@ -36,6 +36,13 @@
       "when": 1771651872836,
       "tag": "0005_nervous_valeria_richards",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1771705802599,
+      "tag": "0006_fixed_johnny_blaze",
+      "breakpoints": true
     }
   ]
 }

@@ -1397,6 +1397,111 @@ ${[0,1,2,3,4,5].map(level => {
             </Card>
           </div>
         </TabsContent>
+
+        <TabsContent value="history">
+          <div className="space-y-4">
+            <Card className="bg-card border-border/50">
+              <CardHeader className="flex flex-row items-center justify-between py-3">
+                <CardTitle className="text-base font-semibold">Version History</CardTitle>
+                <Button size="sm" onClick={() => { setShowSaveVersion(true); setVersionLabel(""); }} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                  <Save className="size-3.5 mr-1" /> Save Snapshot
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {(!versions || versions.length === 0) ? (
+                  <div className="flex flex-col items-center gap-3 py-10 text-center">
+                    <div className="size-12 rounded-xl bg-secondary flex items-center justify-center">
+                      <History className="size-6 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">No versions saved yet. Save a snapshot to track changes over time.</p>
+                    <Button variant="outline" size="sm" onClick={() => { setShowSaveVersion(true); setVersionLabel(""); }}>
+                      <Save className="size-3.5 mr-1" />Save First Snapshot
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {versions.map((v: any) => {
+                      const snapshot = v.snapshot as any;
+                      const isExpanded = compareVersions[0] === v.id || compareVersions[1] === v.id;
+                      return (
+                        <Card key={v.id} className={`border-border/30 transition-all ${isExpanded ? "bg-primary/5 border-primary/30" : "bg-secondary/30"}`}>
+                          <CardContent className="p-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                  <span className="text-xs font-bold text-primary">v{v.versionNumber}</span>
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium">{v.label || `Version ${v.versionNumber}`}</p>
+                                  <p className="text-[11px] text-muted-foreground">
+                                    {new Date(v.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                    {snapshot?.ingredients && <span className="ml-2">· {snapshot.ingredients.length} ingredients</span>}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setCompareVersions(prev => prev[0] === v.id ? [null, prev[1]] : [v.id, prev[1]])}>
+                                  {isExpanded ? <ChevronUp className="size-3 mr-1" /> : <ChevronDown className="size-3 mr-1" />}
+                                  {isExpanded ? "Collapse" : "Details"}
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-7 text-xs text-primary" onClick={() => setShowRevert(v.id)}>
+                                  <RotateCcw className="size-3 mr-1" />Revert
+                                </Button>
+                                <Button variant="ghost" size="icon" className="size-7 text-destructive hover:bg-destructive/10" onClick={() => deleteVersionMutation.mutate({ id: v.id })}>
+                                  <Trash2 className="size-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            {isExpanded && snapshot && (
+                              <div className="mt-3 pt-3 border-t border-border/30">
+                                <div className="grid grid-cols-3 gap-3 mb-3">
+                                  <div className="text-center p-2 bg-background rounded-lg">
+                                    <p className="text-xs text-muted-foreground">Ingredients</p>
+                                    <p className="text-lg font-semibold">{snapshot.ingredients?.length || 0}</p>
+                                  </div>
+                                  <div className="text-center p-2 bg-background rounded-lg">
+                                    <p className="text-xs text-muted-foreground">Total Weight</p>
+                                    <p className="text-lg font-semibold">{parseFloat(snapshot.totalWeight || "0").toFixed(1)}g</p>
+                                  </div>
+                                  <div className="text-center p-2 bg-background rounded-lg">
+                                    <p className="text-xs text-muted-foreground">Solvent</p>
+                                    <p className="text-lg font-semibold">{parseFloat(snapshot.solventWeight || "0").toFixed(1)}g</p>
+                                  </div>
+                                </div>
+                                <div className="overflow-x-auto">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow className="border-border/30">
+                                        <TableHead className="text-xs text-muted-foreground">Ingredient</TableHead>
+                                        <TableHead className="text-xs text-muted-foreground">Category</TableHead>
+                                        <TableHead className="text-right text-xs text-muted-foreground">Weight (g)</TableHead>
+                                        <TableHead className="text-right text-xs text-muted-foreground">Dilution %</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {(snapshot.ingredients || []).map((ing: any, idx: number) => (
+                                        <TableRow key={idx} className="border-border/20">
+                                          <TableCell className="text-xs font-medium py-1.5">{ing.ingredientName}</TableCell>
+                                          <TableCell className="text-xs text-muted-foreground py-1.5">{ing.category || "—"}</TableCell>
+                                          <TableCell className="text-right text-xs tabular-nums py-1.5">{parseFloat(ing.weight || "0").toFixed(3)}</TableCell>
+                                          <TableCell className="text-right text-xs tabular-nums py-1.5">{ing.dilutionPercent || "100"}%</TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* ─── Dialogs ─── */}
