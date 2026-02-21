@@ -258,3 +258,32 @@ export async function batchUpdateInventory(userId: number, updates: { id: number
     await db.update(ingredients).set({ inventoryAmount: u.inventoryAmount }).where(and(eq(ingredients.id, u.id), eq(ingredients.userId, userId)));
   }
 }
+
+// ─── Clone Formula ─────────────────────────────────────────────────────────
+
+export async function cloneFormula(formulaId: number, userId: number, newName: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const original = await getFormula(formulaId, userId);
+  if (!original) throw new Error("Formula not found");
+  const newId = await createFormula({
+    name: newName,
+    description: original.description ? `Cloned from "${original.name}". ${original.description}` : `Cloned from "${original.name}"`,
+    userId,
+    solvent: original.solvent,
+    solventWeight: original.solventWeight,
+    totalWeight: original.totalWeight,
+    status: "draft",
+  });
+  const originalIngredients = await getFormulaIngredients(formulaId);
+  for (const fi of originalIngredients) {
+    await addFormulaIngredient({
+      formulaId: newId,
+      ingredientId: fi.ingredientId,
+      weight: fi.weight,
+      dilutionPercent: fi.dilutionPercent,
+      note: fi.note,
+    });
+  }
+  return newId;
+}

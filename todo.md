@@ -37,3 +37,5 @@
 - [x] Feature: Selectable product types before generation (only generate what you want)
 - [x] Feature: Proper post-generation filtering (All shows everything, clicking a type shows only that recipe)
 - [x] Feature: Save AI-generated recipes to main formula list
+- [x] Feature: Clone Formula - duplicate an existing formula with all ingredients into a new editable copy
+- [x] Feature: Formula Comparison View - side-by-side comparison of two formulas showing shared/unique ingredients

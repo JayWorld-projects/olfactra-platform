@@ -11,6 +11,7 @@ import FormulaList from "./pages/FormulaList";
 import FormulaBuilder from "./pages/FormulaBuilder";
 import ScentConcept from "./pages/ScentConcept";
 import ImportPage from "./pages/ImportPage";
+import FormulaCompare from "./pages/FormulaCompare";
 
 function Router() {
   return (
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/library" component={Library} />
       <Route path="/library/:id" component={IngredientDetail} />
       <Route path="/formulas" component={FormulaList} />
+      <Route path="/formulas/compare/:idA/:idB" component={FormulaCompare} />
       <Route path="/formulas/:id" component={FormulaBuilder} />
       <Route path="/concept" component={ScentConcept} />
       <Route path="/import" component={ImportPage} />

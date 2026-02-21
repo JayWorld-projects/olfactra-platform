@@ -108,6 +108,7 @@ vi.mock("./db", () => {
     addFavorite: vi.fn().mockResolvedValue(undefined),
     removeFavorite: vi.fn().mockResolvedValue(undefined),
     batchUpdateInventory: vi.fn().mockResolvedValue(undefined),
+    cloneFormula: vi.fn().mockImplementation(async () => nextFormulaId++),
     upsertUser: vi.fn().mockResolvedValue(undefined),
     getUserByOpenId: vi.fn().mockResolvedValue(undefined),
     getDb: vi.fn().mockResolvedValue(null),
@@ -490,6 +491,54 @@ describe("batch inventory update", () => {
         updates: [{ id: 1, inventoryAmount: "50ml" }],
       })
     ).rejects.toThrow();
+  });
+});
+
+describe("formula clone", () => {
+  it("clones a formula with a new name", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.formula.clone({ id: 1, name: "Test Formula v2" });
+    expect(result.id).toBeDefined();
+    expect(typeof result.id).toBe("number");
+  });
+
+  it("rejects clone with empty name", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    await expect(caller.formula.clone({ id: 1, name: "" })).rejects.toThrow();
+  });
+
+  it("rejects unauthenticated clone", async () => {
+    const ctx = createUnauthContext();
+    const caller = appRouter.createCaller(ctx);
+    await expect(caller.formula.clone({ id: 1, name: "Copy" })).rejects.toThrow();
+  });
+});
+
+describe("formula compare", () => {
+  it("compares two formulas and returns both with ingredients", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.formula.compare({ formulaIdA: 1, formulaIdB: 1 });
+    expect(result).not.toBeNull();
+    expect(result!.formulaA).toBeDefined();
+    expect(result!.formulaB).toBeDefined();
+    expect(result!.formulaA.ingredients).toBeDefined();
+    expect(result!.formulaB.ingredients).toBeDefined();
+  });
+
+  it("returns null when a formula is not found", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.formula.compare({ formulaIdA: 1, formulaIdB: 999 });
+    expect(result).toBeNull();
+  });
+
+  it("rejects unauthenticated compare", async () => {
+    const ctx = createUnauthContext();
+    const caller = appRouter.createCaller(ctx);
+    await expect(caller.formula.compare({ formulaIdA: 1, formulaIdB: 1 })).rejects.toThrow();
   });
 });
 
