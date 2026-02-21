@@ -258,8 +258,15 @@ function formatDate(date: Date | string): string {
   });
 }
 
+/**
+ * Robust ingredient extractor that handles:
+ * - Markdown tables with various column names
+ * - Bullet lists with "ingredient - Xg" or "ingredient: Xg" patterns
+ * - Bold ingredient names
+ */
 function extractIngredientsFromSection(content: string): { ingredientName: string; weight: string }[] {
   const ingredients: { ingredientName: string; weight: string }[] = [];
+  const seen = new Set<string>();
   const lines = content.split("\n");
   let inTable = false;
   let nameCol = -1;
@@ -267,33 +274,58 @@ function extractIngredientsFromSection(content: string): { ingredientName: strin
 
   for (const line of lines) {
     const trimmed = line.trim();
+
+    // Table parsing
     if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
       const cells = trimmed.split("|").filter(c => c.trim() !== "");
+
       if (!inTable) {
+        // Header row — find name and weight columns
         cells.forEach((cell, idx) => {
           const cl = cell.trim().toLowerCase();
-          if (cl.includes("ingredient") || cl.includes("material") || cl.includes("name") || cl.includes("component") || cl.includes("fragrance")) {
+          if (cl.includes("ingredient") || cl.includes("material") || cl.includes("name") || cl.includes("component") || cl.includes("fragrance") || cl.includes("raw material")) {
             nameCol = idx;
           }
-          if (cl.includes("weight") || cl.includes("amount") || cl.includes("grams") || cl.includes("quantity") || cl.includes("g)")) {
+          if (cl.includes("weight") || cl.includes("amount") || cl.includes("grams") || cl.includes("quantity") || cl.includes("(g)") || cl.includes("g)") || cl.includes("drops")) {
             weightCol = idx;
           }
         });
         inTable = true;
-      } else if (trimmed.includes("---")) {
+      } else if (trimmed.includes("---") || trimmed.includes(":--")) {
+        // Separator row
         continue;
       } else if (nameCol >= 0 && weightCol >= 0 && nameCol < cells.length && weightCol < cells.length) {
-        const name = cells[nameCol].trim().replace(/\*\*/g, "");
+        const name = cells[nameCol].trim().replace(/\*\*/g, "").replace(/^\s*\d+\.\s*/, "");
         const weightRaw = cells[weightCol].trim().replace(/[^\d.]/g, "");
-        if (name && weightRaw && !isNaN(parseFloat(weightRaw))) {
-          ingredients.push({ ingredientName: name, weight: weightRaw });
+        if (name && weightRaw && !isNaN(parseFloat(weightRaw)) && parseFloat(weightRaw) > 0) {
+          // Skip total/sum rows
+          const nameLower = name.toLowerCase();
+          if (!nameLower.includes("total") && !nameLower.includes("sum") && !nameLower.includes("concentrate")) {
+            const key = name.toLowerCase();
+            if (!seen.has(key)) {
+              seen.add(key);
+              ingredients.push({ ingredientName: name, weight: weightRaw });
+            }
+          }
         }
       }
     } else {
-      if (inTable && nameCol >= 0) {
+      if (inTable) {
         inTable = false;
         nameCol = -1;
         weightCol = -1;
+      }
+
+      // Bullet list parsing as fallback: "- Ingredient Name: 2.5g" or "* Ingredient: 2.5 g"
+      const bulletMatch = trimmed.match(/^[-*]\s+\*?\*?(.+?)\*?\*?\s*[:–—-]\s*(\d+\.?\d*)\s*(?:g|grams?|drops?|ml)/i);
+      if (bulletMatch) {
+        const name = bulletMatch[1].trim().replace(/\*\*/g, "");
+        const weight = bulletMatch[2];
+        const nameLower = name.toLowerCase();
+        if (!nameLower.includes("total") && !nameLower.includes("sum") && !seen.has(nameLower)) {
+          seen.add(nameLower);
+          ingredients.push({ ingredientName: name, weight });
+        }
       }
     }
   }
@@ -303,12 +335,8 @@ function extractIngredientsFromSection(content: string): { ingredientName: strin
 function formatDate(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
   return d.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
+    month: "short", day: "numeric", year: "numeric",
+    hour: "numeric", minute: "2-digit", hour12: true,
   });
 }
 
@@ -441,6 +469,12 @@ function ScentConceptContent() {
     setGeneratedAt(new Date(gen.createdAt));
     setShowHistory(false);
   };
+
+  // Filter sections based on active filter
+  const visibleSections = useMemo(() => {
+    if (activeFilter === "all") return sections;
+    return sections.filter(s => s.key === activeFilter);
+  }, [sections, activeFilter]);
 
   // Filter sections based on active filter
   const visibleSections = useMemo(() => {
@@ -934,7 +968,7 @@ function ScentConceptContent() {
             </CardContent>
           </Card>
 
-          {/* Recent History (sidebar compact view) */}
+          {/* Recent History */}
           {historyItems.length > 0 && (
             <Card className="bg-card border-border/50">
               <CardHeader className="pb-3">
@@ -1001,10 +1035,10 @@ function ScentConceptContent() {
               <CardTitle className="text-sm font-semibold text-muted-foreground">Tips</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-xs text-muted-foreground leading-relaxed">
-              <p>Select only the product types you need to get more focused, detailed recipes.</p>
-              <p>Click <strong className="text-foreground">Save to Formulas</strong> on any recipe, or <strong className="text-foreground">Save All</strong> to add every recipe at once.</p>
-              <p>All generations are automatically saved to your history. Click <strong className="text-foreground">History</strong> to reload any past generation.</p>
-              <p>The AI matches ingredient names from your library — check the formula builder after saving to verify all ingredients were matched.</p>
+              <p>Select only the product types you need for faster, more focused recipes.</p>
+              <p>Click <strong className="text-foreground">Save</strong> on any recipe to add it to your formulas, or <strong className="text-foreground">Save All</strong> for the entire batch.</p>
+              <p>Use the filter tabs to view one product type at a time after generation.</p>
+              <p>All generations are auto-saved to History for later retrieval.</p>
             </CardContent>
           </Card>
         </div>
