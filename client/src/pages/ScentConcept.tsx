@@ -258,6 +258,50 @@ function formatDate(date: Date | string): string {
   });
 }
 
+function extractIngredientsFromSection(content: string): { ingredientName: string; weight: string }[] {
+  const ingredients: { ingredientName: string; weight: string }[] = [];
+  const lines = content.split("\n");
+  let inTable = false;
+  let nameCol = -1;
+  let weightCol = -1;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+      const cells = trimmed.split("|").filter(c => c.trim() !== "");
+      if (!inTable) {
+        // Header row
+        cells.forEach((cell, idx) => {
+          const cl = cell.trim().toLowerCase();
+          if (cl.includes("ingredient") || cl.includes("material") || cl.includes("name") || cl.includes("component") || cl.includes("fragrance")) {
+            nameCol = idx;
+          }
+          if (cl.includes("weight") || cl.includes("amount") || cl.includes("grams") || cl.includes("quantity") || cl.includes("g)")) {
+            weightCol = idx;
+          }
+        });
+        inTable = true;
+      } else if (trimmed.includes("---")) {
+        // Separator row
+        continue;
+      } else if (nameCol >= 0 && weightCol >= 0 && nameCol < cells.length && weightCol < cells.length) {
+        const name = cells[nameCol].trim().replace(/\*\*/g, "");
+        const weightRaw = cells[weightCol].trim().replace(/[^\d.]/g, "");
+        if (name && weightRaw && !isNaN(parseFloat(weightRaw))) {
+          ingredients.push({ ingredientName: name, weight: weightRaw });
+        }
+      }
+    } else {
+      if (inTable && nameCol >= 0) {
+        inTable = false;
+        nameCol = -1;
+        weightCol = -1;
+      }
+    }
+  }
+  return ingredients;
+}
+
 export default function ScentConcept() {
   const { loading } = useAuth();
   const navItems = useNavItems();
@@ -868,6 +912,18 @@ function ScentConceptContent() {
               <p className="pl-3 border-l-2 border-border/40">Click <strong className="text-foreground">Save</strong> on any recipe to add it to your formulas, or <strong className="text-foreground">Save All</strong> for the entire batch.</p>
               <p className="pl-3 border-l-2 border-border/40">Use the filter tabs to view one product type at a time after generation.</p>
               <p className="pl-3 border-l-2 border-border/40">All generations are auto-saved to History for later retrieval.</p>
+            </CardContent>
+          </Card>
+
+          {/* Tips */}
+          <Card className="bg-card border-border/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">Tips</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-xs text-muted-foreground leading-relaxed">
+              <p>Select only the product types you need to get more focused, detailed recipes.</p>
+              <p>Click <strong className="text-foreground">Save to Formulas</strong> on any recipe to add it to your formula list for editing and scaling.</p>
+              <p>The AI matches ingredient names from your library — check the formula builder after saving to verify all ingredients were matched.</p>
             </CardContent>
           </Card>
         </div>
