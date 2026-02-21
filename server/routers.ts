@@ -9,6 +9,7 @@ import {
   listFormulas, getFormula, createFormula, updateFormula, deleteFormula,
   getFormulaIngredients, addFormulaIngredient, updateFormulaIngredient,
   removeFormulaIngredient, getIngredientUsage,
+  listFavorites, addFavorite, removeFavorite, batchUpdateInventory,
 } from "./db";
 import { invokeLLM } from "./_core/llm";
 
@@ -74,6 +75,22 @@ export const appRouter = router({
     usage: protectedProcedure
       .input(z.object({ id: z.number() }))
       .query(({ input }) => getIngredientUsage(input.id)),
+
+    favorites: protectedProcedure.query(({ ctx }) => listFavorites(ctx.user.id)),
+
+    addFavorite: protectedProcedure
+      .input(z.object({ ingredientId: z.number() }))
+      .mutation(({ ctx, input }) => addFavorite(ctx.user.id, input.ingredientId)),
+
+    removeFavorite: protectedProcedure
+      .input(z.object({ ingredientId: z.number() }))
+      .mutation(({ ctx, input }) => removeFavorite(ctx.user.id, input.ingredientId)),
+
+    batchUpdateInventory: protectedProcedure
+      .input(z.object({
+        updates: z.array(z.object({ id: z.number(), inventoryAmount: z.string() })).min(1)
+      }))
+      .mutation(({ ctx, input }) => batchUpdateInventory(ctx.user.id, input.updates)),
 
     bulkImport: protectedProcedure
       .input(z.object({

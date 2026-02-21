@@ -102,6 +102,12 @@ vi.mock("./db", () => {
     addFormulaIngredient: vi.fn().mockImplementation(async () => nextFiId++),
     updateFormulaIngredient: vi.fn().mockResolvedValue(undefined),
     removeFormulaIngredient: vi.fn().mockResolvedValue(undefined),
+    listFavorites: vi.fn().mockImplementation(async (userId: number) => {
+      return userId === 1 ? [1, 3] : [];
+    }),
+    addFavorite: vi.fn().mockResolvedValue(undefined),
+    removeFavorite: vi.fn().mockResolvedValue(undefined),
+    batchUpdateInventory: vi.fn().mockResolvedValue(undefined),
     upsertUser: vi.fn().mockResolvedValue(undefined),
     getUserByOpenId: vi.fn().mockResolvedValue(undefined),
     getDb: vi.fn().mockResolvedValue(null),
@@ -371,6 +377,67 @@ describe("formula router", () => {
     const ctx = createAuthContext();
     const caller = appRouter.createCaller(ctx);
     await expect(caller.formula.create({ name: "" })).rejects.toThrow();
+  });
+});
+
+describe("favorites router", () => {
+  it("lists favorite ingredient IDs for the user", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.ingredient.favorites();
+    expect(result).toEqual([1, 3]);
+  });
+
+  it("adds an ingredient to favorites", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    await caller.ingredient.addFavorite({ ingredientId: 2 });
+    // Should not throw
+  });
+
+  it("removes an ingredient from favorites", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    await caller.ingredient.removeFavorite({ ingredientId: 1 });
+    // Should not throw
+  });
+
+  it("rejects unauthenticated access to favorites", async () => {
+    const ctx = createUnauthContext();
+    const caller = appRouter.createCaller(ctx);
+    await expect(caller.ingredient.favorites()).rejects.toThrow();
+  });
+});
+
+describe("batch inventory update", () => {
+  it("updates multiple ingredient inventories at once", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    await caller.ingredient.batchUpdateInventory({
+      updates: [
+        { id: 1, inventoryAmount: "50ml" },
+        { id: 2, inventoryAmount: "100g" },
+      ],
+    });
+    // Should not throw
+  });
+
+  it("rejects empty batch update", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    await expect(
+      caller.ingredient.batchUpdateInventory({ updates: [] })
+    ).rejects.toThrow();
+  });
+
+  it("rejects unauthenticated batch update", async () => {
+    const ctx = createUnauthContext();
+    const caller = appRouter.createCaller(ctx);
+    await expect(
+      caller.ingredient.batchUpdateInventory({
+        updates: [{ id: 1, inventoryAmount: "50ml" }],
+      })
+    ).rejects.toThrow();
   });
 });
 

@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { useNavItems } from "./Home";
 import { trpc } from "@/lib/trpc";
 import { LONGEVITY_LABELS } from "@shared/perfumery";
-import { ArrowLeft, Edit, Trash2, Sparkles, Loader2 } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Sparkles, Loader2, Star } from "lucide-react";
 import { useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
@@ -45,7 +45,16 @@ function DetailContent() {
 
   const { data: ingredient, isLoading } = trpc.ingredient.get.useQuery({ id: ingredientId });
   const { data: usage } = trpc.ingredient.usage.useQuery({ id: ingredientId });
+  const { data: favoriteIds } = trpc.ingredient.favorites.useQuery();
   const utils = trpc.useUtils();
+
+  const isFavorite = favoriteIds?.includes(ingredientId) ?? false;
+  const addFavMutation = trpc.ingredient.addFavorite.useMutation({
+    onSuccess: () => { utils.ingredient.favorites.invalidate(); toast.success("Added to favorites"); },
+  });
+  const removeFavMutation = trpc.ingredient.removeFavorite.useMutation({
+    onSuccess: () => { utils.ingredient.favorites.invalidate(); toast.success("Removed from favorites"); },
+  });
 
   const deleteMutation = trpc.ingredient.delete.useMutation({
     onSuccess: () => {
@@ -130,6 +139,14 @@ function DetailContent() {
           <h2 className="text-xl font-serif font-bold text-foreground">{ingredient.name}</h2>
           {ingredient.casNumber && <p className="text-sm text-muted-foreground font-mono">{ingredient.casNumber}</p>}
         </div>
+        <Button
+          variant="outline" size="sm"
+          onClick={() => isFavorite ? removeFavMutation.mutate({ ingredientId }) : addFavMutation.mutate({ ingredientId })}
+          className={`border-border/50 ${isFavorite ? "text-accent border-accent/50" : ""}`}
+        >
+          <Star className={`size-3.5 ${isFavorite ? "fill-accent text-accent" : ""}`} />
+          {isFavorite ? "Favorited" : "Favorite"}
+        </Button>
         <Button variant="outline" size="sm" onClick={openEdit} className="border-border/50">
           <Edit className="size-3.5" /> Edit
         </Button>

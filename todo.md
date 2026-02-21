@@ -28,3 +28,6 @@
 - [x] Redesign: Simplify navigation for easy understanding
 - [x] Redesign: Update all pages (Dashboard, Library, Formulas, Scent Lab, Import, Ingredient Detail)
 - [x] Redesign: Dark theme with teal/gold accents
+- [x] Feature: Favorites/Frequently Used section on Library page with star toggle and quick-access panel
+- [x] Feature: PDF export for formulas with JayLabs branding
+- [x] Feature: Batch inventory update mode on Library page for bulk stock quantity editing

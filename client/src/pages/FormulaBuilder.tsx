@@ -184,15 +184,21 @@ function BuilderContent() {
 
   const generateExport = (format: string) => {
     if (!formula) return;
-    let content = "";
     const lines = formulaIngredients.map((fi: any) => ({
       name: fi.ingredient?.name || "Unknown",
       weight: parseFloat(fi.weight || "0").toFixed(3),
       dilution: fi.dilutionPercent || "100",
       pct: totalWeight > 0 ? ((parseFloat(fi.weight || "0") / totalWeight) * 100).toFixed(2) : "0",
       category: fi.ingredient?.category || "",
+      longevity: fi.ingredient?.longevity != null ? (LONGEVITY_LABELS[fi.ingredient.longevity] || `Level ${fi.ingredient.longevity}`) : "",
     }));
 
+    if (format === "pdf") {
+      generatePdfExport(formula, lines);
+      return;
+    }
+
+    let content = "";
     if (format === "markdown") {
       content = `# ${formula.name}\n\n`;
       if (formula.description) content += `${formula.description}\n\n`;
@@ -222,6 +228,101 @@ function BuilderContent() {
     a.click();
     URL.revokeObjectURL(url);
     toast.success(`Exported as ${format.toUpperCase()}`);
+    setShowExport(false);
+  };
+
+  const generatePdfExport = (formula: any, lines: { name: string; weight: string; dilution: string; pct: string; category: string; longevity: string }[]) => {
+    const now = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; color: #1a1a1a; padding: 40px; background: white; }
+  .header { border-bottom: 3px solid #006778; padding-bottom: 20px; margin-bottom: 30px; }
+  .brand { font-family: 'Playfair Display', serif; font-size: 12px; color: #006778; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 4px; }
+  .formula-name { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: #101820; margin-bottom: 6px; }
+  .date { font-size: 11px; color: #666; }
+  .description { font-size: 13px; color: #444; margin-bottom: 24px; line-height: 1.5; }
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .stat-card { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 14px; }
+  .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 4px; }
+  .stat-value { font-size: 20px; font-weight: 600; color: #101820; }
+  .stat-value.accent { color: #D7A22A; }
+  .stat-value.teal { color: #006778; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+  th { background: #006778; color: white; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 12px; text-align: left; font-weight: 500; }
+  th:nth-child(3), th:nth-child(4), th:nth-child(5), th:nth-child(6) { text-align: right; }
+  td { padding: 9px 12px; font-size: 12px; border-bottom: 1px solid #eee; }
+  td:nth-child(3), td:nth-child(4), td:nth-child(5), td:nth-child(6) { text-align: right; font-variant-numeric: tabular-nums; }
+  tr:nth-child(even) { background: #fafafa; }
+  tr.solvent-row { background: #f0f7f9; font-style: italic; }
+  tr.total-row { background: #006778; color: white; font-weight: 600; }
+  tr.total-row td { border-bottom: none; }
+  .pyramid-section { margin-bottom: 24px; }
+  .pyramid-title { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: #101820; margin-bottom: 12px; }
+  .pyramid-bar { display: flex; align-items: center; margin-bottom: 6px; }
+  .pyramid-label { width: 120px; font-size: 11px; font-weight: 500; color: #444; }
+  .pyramid-track { flex: 1; height: 16px; background: #f0f0f0; border-radius: 8px; overflow: hidden; margin-right: 10px; }
+  .pyramid-fill { height: 100%; border-radius: 8px; }
+  .pyramid-value { font-size: 11px; color: #666; width: 80px; text-align: right; font-variant-numeric: tabular-nums; }
+  .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+  .footer-brand { font-family: 'Playfair Display', serif; font-size: 14px; color: #006778; }
+  .footer-note { font-size: 10px; color: #999; }
+  @media print { body { padding: 20px; } }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">JayLabs Perfumery</div>
+    <div class="formula-name">${formula.name}</div>
+    <div class="date">${now} &bull; Status: ${formula.status === "final" ? "Final" : "Draft"}</div>
+  </div>
+  ${formula.description ? `<div class="description">${formula.description}</div>` : ""}
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-label">Concentrate</div><div class="stat-value">${concentrateWeight.toFixed(3)}g</div></div>
+    <div class="stat-card"><div class="stat-label">Total Weight</div><div class="stat-value">${totalWeight.toFixed(3)}g</div></div>
+    <div class="stat-card"><div class="stat-label">Concentration</div><div class="stat-value teal">${concentrationPercent.toFixed(1)}%</div></div>
+    <div class="stat-card"><div class="stat-label">Estimated Cost</div><div class="stat-value accent">$${totalCost.toFixed(2)}</div></div>
+  </div>
+  <table>
+    <thead><tr><th>Ingredient</th><th>Category</th><th>Weight (g)</th><th>Dilution</th><th>% of Total</th><th>Longevity</th></tr></thead>
+    <tbody>
+      ${lines.map(l => `<tr><td>${l.name}</td><td>${l.category}</td><td>${l.weight}</td><td>${l.dilution}%</td><td>${l.pct}%</td><td>${l.longevity}</td></tr>`).join("")}
+      <tr class="solvent-row"><td>${formula.solvent || "Ethanol"} (Solvent)</td><td>Solvent</td><td>${solventWeight.toFixed(3)}</td><td>100%</td><td>${totalWeight > 0 ? ((solventWeight / totalWeight) * 100).toFixed(2) : "0"}%</td><td>&mdash;</td></tr>
+      <tr class="total-row"><td><strong>Total</strong></td><td></td><td><strong>${totalWeight.toFixed(3)}</strong></td><td></td><td><strong>100%</strong></td><td></td></tr>
+    </tbody>
+  </table>
+  <div class="pyramid-section">
+    <div class="pyramid-title">Fragrance Pyramid</div>
+    ${[0,1,2,3,4,5].map(level => {
+      const data = pyramidData[level];
+      const pct = concentrateWeight > 0 ? (data.weight / concentrateWeight) * 100 : 0;
+      const colors: Record<number, string> = { 0: "#f97316", 1: "#eab308", 2: "#84cc16", 3: "#22c55e", 4: "#0ea5e9", 5: "#8b5cf6" };
+      return `<div class="pyramid-bar"><span class="pyramid-label">${LONGEVITY_LABELS[level]}</span><div class="pyramid-track"><div class="pyramid-fill" style="width:${Math.max(pct, pct > 0 ? 2 : 0)}%;background:${colors[level]}"></div></div><span class="pyramid-value">${data.weight.toFixed(3)}g (${pct.toFixed(1)}%)</span></div>`;
+    }).join("")}
+  </div>
+  <div class="footer">
+    <div class="footer-brand">JayLabs Perfumery Studio</div>
+    <div class="footer-note">Generated on ${now}</div>
+  </div>
+</body>
+</html>`;
+
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+      toast.success("PDF ready — use your browser's print dialog to save");
+    } else {
+      toast.error("Pop-up blocked. Please allow pop-ups and try again.");
+    }
     setShowExport(false);
   };
 
@@ -586,6 +687,9 @@ function BuilderContent() {
         <DialogContent className="bg-card">
           <DialogHeader><DialogTitle className="font-serif">Export Formula</DialogTitle></DialogHeader>
           <div className="grid gap-3">
+            <Button variant="outline" className="justify-start border-border/50 hover:bg-secondary" onClick={() => generateExport("pdf")}>
+              <Download className="size-4" /> Export as PDF (Print)
+            </Button>
             <Button variant="outline" className="justify-start border-border/50 hover:bg-secondary" onClick={() => generateExport("markdown")}>
               <Download className="size-4" /> Export as Markdown (.md)
             </Button>

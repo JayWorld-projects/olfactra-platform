@@ -62,3 +62,13 @@ export const formulaIngredients = mysqlTable("formula_ingredients", {
 
 export type FormulaIngredient = typeof formulaIngredients.$inferSelect;
 export type InsertFormulaIngredient = typeof formulaIngredients.$inferInsert;
+
+export const favorites = mysqlTable("favorites", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  ingredientId: int("ingredientId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Favorite = typeof favorites.$inferSelect;
+export type InsertFavorite = typeof favorites.$inferInsert;

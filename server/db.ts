@@ -5,6 +5,7 @@ import {
   ingredients, InsertIngredient, Ingredient,
   formulas, InsertFormula, Formula,
   formulaIngredients, InsertFormulaIngredient, FormulaIngredient,
+  favorites, InsertFavorite, Favorite,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -223,4 +224,37 @@ export async function getIngredientUsage(ingredientId: number) {
     .where(eq(formulaIngredients.ingredientId, ingredientId))
     .orderBy(desc(formulaIngredients.weight));
   return rows;
+}
+
+// ─── Favorites ──────────────────────────────────────────────────────────────
+
+export async function listFavorites(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select().from(favorites).where(eq(favorites.userId, userId));
+  return rows.map(r => r.ingredientId);
+}
+
+export async function addFavorite(userId: number, ingredientId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const existing = await db.select().from(favorites).where(and(eq(favorites.userId, userId), eq(favorites.ingredientId, ingredientId))).limit(1);
+  if (existing.length > 0) return;
+  await db.insert(favorites).values({ userId, ingredientId });
+}
+
+export async function removeFavorite(userId: number, ingredientId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(favorites).where(and(eq(favorites.userId, userId), eq(favorites.ingredientId, ingredientId)));
+}
+
+// ─── Batch Inventory Update ─────────────────────────────────────────────────
+
+export async function batchUpdateInventory(userId: number, updates: { id: number; inventoryAmount: string }[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  for (const u of updates) {
+    await db.update(ingredients).set({ inventoryAmount: u.inventoryAmount }).where(and(eq(ingredients.id, u.id), eq(ingredients.userId, userId)));
+  }
 }
