@@ -226,45 +226,40 @@ Please provide the following information in a well-structured format:
         ).join("\n");
 
         const typePrompts: Record<string, string> = {
-          perfume: `## PERFUME (Eau de Parfum)\nCreate 2 formula variations:\n- List ingredients with weights in grams (10-20g concentrate total)\n- Suggest ethanol solvent weight for EdP concentration (~15-20%)\n- Describe scent evolution (top → heart → base)\n- Stay within IFRA limits`,
-          candle: `## CANDLE\nCreate 1 candle fragrance recipe:\n- Specify fragrance load percentage (typically 6-10% of wax weight)\n- Base it on 1 lb (454g) of soy wax\n- List the fragrance oil blend with weights in grams\n- Note flash point considerations\n- Suggest wick size and burn notes`,
-          lotion: `## LOTION / BODY CREAM\nCreate 1 scented lotion recipe:\n- Specify fragrance load (typically 1-3% of total weight)\n- Base it on 500g total batch\n- List the fragrance blend with weights in grams\n- Note any skin-safe usage limits (IFRA Category 5A)\n- Suggest a carrier/base recommendation`,
-          bodywash: `## BODY WASH / SHOWER GEL\nCreate 1 scented body wash recipe:\n- Specify fragrance load (typically 1-2% of total weight)\n- Base it on 500g total batch\n- List the fragrance blend with weights in grams\n- Note which ingredients perform well in wash-off products\n- Consider top-heavy composition for shower impact`,
-          incense: `## INCENSE\nCreate 1 incense blend recipe:\n- Specify the blend for stick or cone incense\n- List ingredients with weights in grams for a small batch\n- Note which materials are suitable for combustion\n- Suggest a binder (e.g., makko powder) and proportions\n- Describe the smoke character`,
-          bodyspray: `## BODY SPRAY / BODY MIST\nCreate 1 body spray recipe:\n- Specify fragrance load (typically 3-5% of total)\n- Base it on 100ml total\n- List the fragrance blend with weights in grams\n- Use a lighter, fresher interpretation of the concept\n- Note alcohol/water ratio`,
-          humidifier: `## HUMIDIFIER / DIFFUSER OIL\nCreate 1 essential/fragrance oil blend for humidifiers:\n- List ingredients with drops or grams for a small blend (10-15ml total)\n- Note which materials are water-soluble or suitable for ultrasonic diffusers\n- Suggest usage rate (drops per water tank fill)\n- Consider room-filling projection and safety for enclosed spaces`,
+          perfume: `## PERFUME\nCreate 1 formula:\n- List ingredients with weights in grams (10-20g concentrate total)\n- Suggest ethanol solvent weight for EdP concentration (~15-20%)\n- Describe scent evolution (top, heart, base)\n- Stay within IFRA limits`,
+          candle: `## CANDLE\nCreate 1 candle fragrance recipe:\n- Specify fragrance load percentage (typically 6-10% of wax weight)\n- Base it on 1 lb (454g) of soy wax\n- List the fragrance oil blend with weights in grams\n- Note flash point considerations`,
+          lotion: `## LOTION\nCreate 1 scented lotion recipe:\n- Specify fragrance load (typically 1-3% of total weight)\n- Base it on 500g total batch\n- List the fragrance blend with weights in grams\n- Note any skin-safe usage limits`,
+          bodywash: `## BODYWASH\nCreate 1 scented body wash recipe:\n- Specify fragrance load (typically 1-2% of total weight)\n- Base it on 500g total batch\n- List the fragrance blend with weights in grams\n- Consider top-heavy composition for shower impact`,
+          incense: `## INCENSE\nCreate 1 incense blend recipe:\n- Specify the blend for stick or cone incense\n- List ingredients with weights in grams for a small batch\n- Suggest a binder (e.g., makko powder) and proportions`,
+          bodyspray: `## BODYSPRAY\nCreate 1 body spray recipe:\n- Specify fragrance load (typically 3-5% of total)\n- Base it on 100ml total\n- List the fragrance blend with weights in grams\n- Note alcohol/water ratio`,
+          humidifier: `## HUMIDIFIER\nCreate 1 essential/fragrance oil blend for humidifiers/diffusers:\n- List ingredients with drops or grams for a small blend (10-15ml total)\n- Note which materials are suitable for ultrasonic diffusers\n- Suggest usage rate (drops per water tank fill)`,
         };
 
-        const selectedPrompts = input.selectedTypes.map(t => typePrompts[t]).join("\n\n---\n\n");
+        const selectedPrompts = input.selectedTypes.map(t => typePrompts[t]).join("\n\n");
         const typeCount = input.selectedTypes.length;
-        const typeLabel = typeCount === 7 ? "ALL SEVEN" : typeCount.toString();
 
-        const prompt = `You are a master perfumer and scent formulator with expertise across multiple product categories. A client describes a scent concept:
+        const prompt = `A client describes a scent concept:
 
 "${input.concept}"
 
-Here is the client's available ingredient library (fragrance raw materials):
+Available ingredient library:
 ${ingredientList}
 
-Using ONLY ingredients from the library above, create complete recipes for the following ${typeLabel} product type${typeCount > 1 ? "s" : ""}. Each recipe should capture the described scent concept adapted to that product's requirements.
-
----
+Using ONLY ingredients from the library above, create recipes for ${typeCount} product type${typeCount > 1 ? "s" : ""}.
 
 ${selectedPrompts}
 
----
-
-For EACH product type:
-- Give the recipe a creative name
-- List all ingredients with exact weights/measurements
-- Explain your ingredient choices briefly
-- Include any safety notes or tips specific to that product type
-
-Format with clear markdown headers (## for product type, ### for recipe name). Use tables for ingredient lists where appropriate.`;
+CRITICAL FORMATTING RULES (you MUST follow these exactly):
+1. Each product type MUST start with exactly "## PERFUME", "## CANDLE", "## LOTION", "## BODYWASH", "## INCENSE", "## BODYSPRAY", or "## HUMIDIFIER" — use these EXACT headers, no numbering, no parenthetical text.
+2. Do NOT use ## headers for anything else. Use ### for sub-sections within a product type.
+3. Each product type MUST include a markdown table with columns: | Ingredient | Weight (g) | and at least 3 ingredient rows.
+4. Give each recipe a creative name using ### header.
+5. Include brief ingredient choice explanations and safety notes.
+6. Every product type requested MUST have a complete recipe with ingredients — never skip one.`;
 
         const result = await invokeLLM({
           messages: [
-            { role: "system", content: "You are a master perfumer and product formulator with decades of experience creating fragrances for perfumes, candles, body care, incense, and home fragrance products. You understand how fragrance materials behave differently across product types — combustion for incense, wash-off for body wash, skin safety for lotions, and air diffusion for humidifiers. Always create balanced, safe, and effective formulas. Use markdown formatting with clear headers and tables." },
+            { role: "system", content: "You are a master perfumer and product formulator. You create balanced, safe, and effective formulas. You ALWAYS format output with strict markdown: ## headers ONLY for product type sections (## PERFUME, ## CANDLE, ## LOTION, ## BODYWASH, ## INCENSE, ## BODYSPRAY, ## HUMIDIFIER), ### headers for recipe names and sub-sections. You ALWAYS include a markdown table with | Ingredient | Weight (g) | columns for every recipe. Never skip a requested product type." },
             { role: "user", content: prompt },
           ],
         });

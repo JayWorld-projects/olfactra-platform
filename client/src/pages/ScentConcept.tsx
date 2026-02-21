@@ -9,13 +9,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { useNavItems } from "./Home";
 import { trpc } from "@/lib/trpc";
 import {
   Sparkles, Loader2, Lightbulb, Flame, Droplets, Wind,
   Bath, SprayCan, CloudFog, GlassWater, Save, Check, BookmarkPlus,
-  History, Trash2, Clock, ChevronRight, ArrowLeft, SaveAll
+  History, Trash2, Clock, ChevronRight, SaveAll
 } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
@@ -25,12 +24,12 @@ import { useLocation } from "wouter";
 type ProductTypeKey = "perfume" | "candle" | "lotion" | "bodywash" | "incense" | "bodyspray" | "humidifier";
 
 const PRODUCT_TYPES: { key: ProductTypeKey; label: string; icon: React.ComponentType<{ className?: string }>; color: string; bgColor: string; borderColor: string; parseKeys: string[] }[] = [
-  { key: "perfume", label: "Perfume", icon: Droplets, color: "text-purple-400", bgColor: "bg-purple-400/10", borderColor: "border-purple-400/30", parseKeys: ["perfume", "eau de"] },
+  { key: "perfume", label: "Perfume", icon: Droplets, color: "text-purple-400", bgColor: "bg-purple-400/10", borderColor: "border-purple-400/30", parseKeys: ["perfume", "eau de parfum", "edp"] },
   { key: "candle", label: "Candle", icon: Flame, color: "text-orange-400", bgColor: "bg-orange-400/10", borderColor: "border-orange-400/30", parseKeys: ["candle"] },
   { key: "lotion", label: "Lotion", icon: GlassWater, color: "text-pink-400", bgColor: "bg-pink-400/10", borderColor: "border-pink-400/30", parseKeys: ["lotion", "body cream"] },
-  { key: "bodywash", label: "Body Wash", icon: Bath, color: "text-blue-400", bgColor: "bg-blue-400/10", borderColor: "border-blue-400/30", parseKeys: ["body wash", "shower"] },
+  { key: "bodywash", label: "Body Wash", icon: Bath, color: "text-blue-400", bgColor: "bg-blue-400/10", borderColor: "border-blue-400/30", parseKeys: ["bodywash", "body wash", "shower gel", "shower"] },
   { key: "incense", label: "Incense", icon: Wind, color: "text-amber-400", bgColor: "bg-amber-400/10", borderColor: "border-amber-400/30", parseKeys: ["incense"] },
-  { key: "bodyspray", label: "Body Spray", icon: SprayCan, color: "text-teal-400", bgColor: "bg-teal-400/10", borderColor: "border-teal-400/30", parseKeys: ["body spray", "body mist"] },
+  { key: "bodyspray", label: "Body Spray", icon: SprayCan, color: "text-teal-400", bgColor: "bg-teal-400/10", borderColor: "border-teal-400/30", parseKeys: ["bodyspray", "body spray", "body mist"] },
   { key: "humidifier", label: "Humidifier Oil", icon: CloudFog, color: "text-cyan-400", bgColor: "bg-cyan-400/10", borderColor: "border-cyan-400/30", parseKeys: ["humidifier", "diffuser"] },
 ];
 
@@ -48,6 +47,12 @@ interface ParsedSection {
   rawContent: string;
 }
 
+/**
+ * Robust parser that handles various LLM formatting styles:
+ * - "## PERFUME", "## 1. PERFUME (Eau de Parfum)", "## PERFUME (Eau de Parfum)"
+ * - Numbered headers like "## 1. CANDLE"
+ * - Ensures ### sub-headers stay within their parent ## section
+ */
 function parseProductSections(content: string): ParsedSection[] {
   const sections: ParsedSection[] = [];
   const lines = content.split("\n");
@@ -55,37 +60,77 @@ function parseProductSections(content: string): ParsedSection[] {
   let currentTitle = "";
   let currentLines: string[] = [];
 
+  const matchProductType = (headerText: string): ProductTypeKey | null => {
+    const cleaned = headerText.toLowerCase()
+      .replace(/^\d+\.\s*/, "") // remove leading numbers like "1. "
+      .trim();
+    for (const pt of PRODUCT_TYPES) {
+      if (pt.parseKeys.some(k => cleaned.includes(k) || cleaned.startsWith(k))) {
+        return pt.key;
+      }
+    }
+    return null;
+  };
+
   for (const line of lines) {
-    const headerMatch = line.match(/^##\s*\d*\.?\s*(.*)/i);
-    if (headerMatch) {
-      if (currentKey && currentLines.length > 0) {
-        const rawContent = currentLines.join("\n").trim();
-        sections.push({ key: currentKey, title: currentTitle, content: rawContent, rawContent: `## ${currentTitle}\n${rawContent}` });
-      }
-      const headerText = headerMatch[1];
-      const headerLower = headerText.toLowerCase();
-      currentTitle = headerText;
-      currentKey = "";
-      for (const pt of PRODUCT_TYPES) {
-        if (pt.parseKeys.some(k => headerLower.includes(k))) {
-          currentKey = pt.key;
-          break;
+    // Only match ## headers (not ### or deeper) for section splitting
+    const h2Match = line.match(/^##\s+(?!\#)(.*)/);
+    if (h2Match) {
+      const headerText = h2Match[1].trim();
+      const matchedKey = matchProductType(headerText);
+
+      if (matchedKey) {
+        // Save previous section if exists
+        if (currentKey && currentLines.length > 0) {
+          const rawContent = currentLines.join("\n").trim();
+          if (rawContent.length > 0) {
+            sections.push({ key: currentKey, title: currentTitle, content: rawContent, rawContent: `## ${currentTitle}\n${rawContent}` });
+          }
         }
+        currentKey = matchedKey;
+        currentTitle = headerText;
+        currentLines = [];
+      } else {
+        // Unknown ## header — treat as content within current section
+        currentLines.push(line);
       }
-      currentLines = [];
     } else {
       currentLines.push(line);
     }
   }
+
+  // Don't forget the last section
   if (currentKey && currentLines.length > 0) {
     const rawContent = currentLines.join("\n").trim();
-    sections.push({ key: currentKey, title: currentTitle, content: rawContent, rawContent: `## ${currentTitle}\n${rawContent}` });
+    if (rawContent.length > 0) {
+      sections.push({ key: currentKey, title: currentTitle, content: rawContent, rawContent: `## ${currentTitle}\n${rawContent}` });
+    }
   }
-  return sections;
+
+  // Deduplicate: if multiple sections have the same key, merge them
+  const merged = new Map<ProductTypeKey, ParsedSection>();
+  for (const s of sections) {
+    if (merged.has(s.key)) {
+      const existing = merged.get(s.key)!;
+      existing.content += "\n\n" + s.content;
+      existing.rawContent += "\n\n" + s.rawContent;
+    } else {
+      merged.set(s.key, { ...s });
+    }
+  }
+
+  return Array.from(merged.values());
 }
 
+/**
+ * Robust ingredient extractor that handles:
+ * - Markdown tables with various column names
+ * - Bullet lists with "ingredient - Xg" or "ingredient: Xg" patterns
+ * - Bold ingredient names
+ */
 function extractIngredientsFromSection(content: string): { ingredientName: string; weight: string }[] {
   const ingredients: { ingredientName: string; weight: string }[] = [];
+  const seen = new Set<string>();
   const lines = content.split("\n");
   let inTable = false;
   let nameCol = -1;
@@ -93,33 +138,58 @@ function extractIngredientsFromSection(content: string): { ingredientName: strin
 
   for (const line of lines) {
     const trimmed = line.trim();
+
+    // Table parsing
     if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
       const cells = trimmed.split("|").filter(c => c.trim() !== "");
+
       if (!inTable) {
+        // Header row — find name and weight columns
         cells.forEach((cell, idx) => {
           const cl = cell.trim().toLowerCase();
-          if (cl.includes("ingredient") || cl.includes("material") || cl.includes("name") || cl.includes("component") || cl.includes("fragrance")) {
+          if (cl.includes("ingredient") || cl.includes("material") || cl.includes("name") || cl.includes("component") || cl.includes("fragrance") || cl.includes("raw material")) {
             nameCol = idx;
           }
-          if (cl.includes("weight") || cl.includes("amount") || cl.includes("grams") || cl.includes("quantity") || cl.includes("g)")) {
+          if (cl.includes("weight") || cl.includes("amount") || cl.includes("grams") || cl.includes("quantity") || cl.includes("(g)") || cl.includes("g)") || cl.includes("drops")) {
             weightCol = idx;
           }
         });
         inTable = true;
-      } else if (trimmed.includes("---")) {
+      } else if (trimmed.includes("---") || trimmed.includes(":--")) {
+        // Separator row
         continue;
       } else if (nameCol >= 0 && weightCol >= 0 && nameCol < cells.length && weightCol < cells.length) {
-        const name = cells[nameCol].trim().replace(/\*\*/g, "");
+        const name = cells[nameCol].trim().replace(/\*\*/g, "").replace(/^\s*\d+\.\s*/, "");
         const weightRaw = cells[weightCol].trim().replace(/[^\d.]/g, "");
-        if (name && weightRaw && !isNaN(parseFloat(weightRaw))) {
-          ingredients.push({ ingredientName: name, weight: weightRaw });
+        if (name && weightRaw && !isNaN(parseFloat(weightRaw)) && parseFloat(weightRaw) > 0) {
+          // Skip total/sum rows
+          const nameLower = name.toLowerCase();
+          if (!nameLower.includes("total") && !nameLower.includes("sum") && !nameLower.includes("concentrate")) {
+            const key = name.toLowerCase();
+            if (!seen.has(key)) {
+              seen.add(key);
+              ingredients.push({ ingredientName: name, weight: weightRaw });
+            }
+          }
         }
       }
     } else {
-      if (inTable && nameCol >= 0) {
+      if (inTable) {
         inTable = false;
         nameCol = -1;
         weightCol = -1;
+      }
+
+      // Bullet list parsing as fallback: "- Ingredient Name: 2.5g" or "* Ingredient: 2.5 g"
+      const bulletMatch = trimmed.match(/^[-*]\s+\*?\*?(.+?)\*?\*?\s*[:–—-]\s*(\d+\.?\d*)\s*(?:g|grams?|drops?|ml)/i);
+      if (bulletMatch) {
+        const name = bulletMatch[1].trim().replace(/\*\*/g, "");
+        const weight = bulletMatch[2];
+        const nameLower = name.toLowerCase();
+        if (!nameLower.includes("total") && !nameLower.includes("sum") && !seen.has(nameLower)) {
+          seen.add(nameLower);
+          ingredients.push({ ingredientName: name, weight });
+        }
       }
     }
   }
@@ -129,12 +199,8 @@ function extractIngredientsFromSection(content: string): { ingredientName: strin
 function formatDate(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
   return d.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
+    month: "short", day: "numeric", year: "numeric",
+    hour: "numeric", minute: "2-digit", hour12: true,
   });
 }
 
@@ -166,16 +232,7 @@ function ScentConceptContent() {
 
   const utils = trpc.useUtils();
 
-  // Fetch generation history
-  const historyQuery = trpc.formula.generationHistory.useQuery(undefined, {
-    staleTime: 30_000,
-  });
-
-  // Fetch a specific generation when viewing history
-  const viewingGeneration = trpc.formula.getGeneration.useQuery(
-    { id: viewingHistoryId! },
-    { enabled: viewingHistoryId !== null }
-  );
+  const historyQuery = trpc.formula.generationHistory.useQuery(undefined, { staleTime: 30_000 });
 
   const scentMutation = trpc.formula.scentConcept.useMutation({
     onSuccess: (data) => {
@@ -191,7 +248,7 @@ function ScentConceptContent() {
 
   const saveMutation = trpc.formula.saveFromConcept.useMutation({
     onSuccess: (data) => {
-      toast.success(`Formula saved with ${data.addedCount} of ${data.totalRequested} ingredients matched. Opening formula...`);
+      toast.success(`Formula saved with ${data.addedCount} of ${data.totalRequested} ingredients matched.`);
       utils.formula.list.invalidate();
       setSaveDialogOpen(false);
       setSavingSection(null);
@@ -203,7 +260,7 @@ function ScentConceptContent() {
 
   const deleteGenerationMutation = trpc.formula.deleteGeneration.useMutation({
     onSuccess: () => {
-      toast.success("Generation deleted from history.");
+      toast.success("Generation deleted.");
       utils.formula.generationHistory.invalidate();
       if (viewingHistoryId) {
         setViewingHistoryId(null);
@@ -230,9 +287,14 @@ function ScentConceptContent() {
     setSelectedTypes(new Set(PRODUCT_TYPES.map(p => p.key)));
   }, []);
 
+  const deselectAll = useCallback(() => {
+    // Keep at least one selected
+    setSelectedTypes(new Set([PRODUCT_TYPES[0].key]));
+  }, []);
+
   const handleGenerate = () => {
     if (!concept.trim()) { toast.error("Please describe a scent concept first."); return; }
-    if (selectedTypes.size === 0) { toast.error("Please select at least one product type."); return; }
+    if (selectedTypes.size === 0) { toast.error("Select at least one product type."); return; }
     setResult(null);
     setActiveFilter("all");
     setViewingHistoryId(null);
@@ -251,6 +313,12 @@ function ScentConceptContent() {
   };
 
   const sections = useMemo(() => result ? parseProductSections(result) : [], [result]);
+
+  // Filter sections based on active filter
+  const visibleSections = useMemo(() => {
+    if (activeFilter === "all") return sections;
+    return sections.filter(s => s.key === activeFilter);
+  }, [sections, activeFilter]);
 
   const handleSaveClick = (section: ParsedSection) => {
     setSavingSection(section);
@@ -287,7 +355,7 @@ function ScentConceptContent() {
     if (!savingSection || !formulaName.trim()) return;
     const ingredients = extractIngredientsFromSection(savingSection.content);
     if (ingredients.length === 0) {
-      toast.error("Could not extract ingredients from this recipe. You may need to add them manually after saving.");
+      toast.error("Could not extract ingredients. You can add them manually after saving.");
     }
     const pt = PRODUCT_TYPES.find(p => p.key === savingSection.key);
     saveMutation.mutate({
@@ -302,11 +370,12 @@ function ScentConceptContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-2xl font-serif font-bold text-foreground">Scent Lab</h2>
           <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
-            Describe a memory, place, or feeling. Select which product types you want, then generate recipes from your ingredient library.
+            Describe a memory, place, or feeling. Select product types, then generate recipes from your ingredient library.
           </p>
         </div>
         <Button
@@ -338,12 +407,12 @@ function ScentConceptContent() {
               </Button>
             </div>
             <CardDescription className="text-muted-foreground">
-              Click any past generation to reload it. All generations are automatically saved.
+              Click any past generation to reload it.
             </CardDescription>
           </CardHeader>
           <CardContent>
             {historyItems.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">No generation history yet. Create your first recipe above!</p>
+              <p className="text-sm text-muted-foreground text-center py-6">No history yet. Generate your first recipe above!</p>
             ) : (
               <ScrollArea className="max-h-[400px]">
                 <div className="space-y-2">
@@ -415,7 +484,7 @@ function ScentConceptContent() {
                 <Sparkles className="size-4 text-accent" /> Describe Your Scent Concept
               </CardTitle>
               <CardDescription className="text-muted-foreground">
-                Be as descriptive as possible — include sensory details, emotions, settings, or specific scent references.
+                Be descriptive — include sensory details, emotions, settings, or scent references.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -431,12 +500,15 @@ function ScentConceptContent() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-medium text-foreground">Select Product Types</Label>
-                  <button
-                    onClick={selectAll}
-                    className="text-xs text-primary hover:text-primary/80 transition-colors"
-                  >
-                    Select All
-                  </button>
+                  <div className="flex gap-2">
+                    <button onClick={selectAll} className="text-xs text-primary hover:text-primary/80 transition-colors">
+                      All
+                    </button>
+                    <span className="text-xs text-muted-foreground/40">|</span>
+                    <button onClick={deselectAll} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                      Reset
+                    </button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {PRODUCT_TYPES.map(pt => {
@@ -479,14 +551,12 @@ function ScentConceptContent() {
           {scentMutation.isPending && (
             <Card className="bg-card border-border/50">
               <CardContent className="py-12 flex flex-col items-center gap-4">
-                <div className="relative">
-                  <div className="size-16 rounded-full border-2 border-primary/20 flex items-center justify-center">
-                    <Loader2 className="size-8 text-primary animate-spin" />
-                  </div>
+                <div className="size-16 rounded-full border-2 border-primary/20 flex items-center justify-center">
+                  <Loader2 className="size-8 text-primary animate-spin" />
                 </div>
                 <div className="text-center space-y-1">
                   <p className="text-foreground font-medium">Crafting your recipes...</p>
-                  <p className="text-muted-foreground text-sm">Generating formulas for {selectedTypes.size} product type{selectedTypes.size > 1 ? "s" : ""} from your library</p>
+                  <p className="text-muted-foreground text-sm">This may take up to 2 minutes for multiple product types</p>
                 </div>
                 <div className="flex flex-wrap justify-center gap-2 mt-2">
                   {PRODUCT_TYPES.filter(pt => selectedTypes.has(pt.key)).map(pt => {
@@ -503,44 +573,43 @@ function ScentConceptContent() {
           )}
 
           {/* Results */}
-          {result && (
+          {result && !scentMutation.isPending && (
             <div className="space-y-4">
-              {/* Timestamp and Actions Bar */}
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="flex items-center gap-3">
-                  {/* Product Type Filter Tabs */}
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setActiveFilter("all")}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${
-                        activeFilter === "all"
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-card text-muted-foreground border-border/50 hover:border-primary/40 hover:text-foreground"
-                      }`}
-                    >
-                      All ({sections.length})
-                    </button>
-                    {PRODUCT_TYPES.filter(pt => generatedTypes.includes(pt.key)).map(pt => {
-                      const Icon = pt.icon;
-                      const hasSection = sections.some(s => s.key === pt.key);
-                      return (
-                        <button
-                          key={pt.key}
-                          onClick={() => hasSection && setActiveFilter(pt.key)}
-                          disabled={!hasSection}
-                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border flex items-center gap-1.5 ${
-                            activeFilter === pt.key
-                              ? `${pt.bgColor} ${pt.color} ${pt.borderColor}`
-                              : hasSection
-                                ? "bg-card text-muted-foreground border-border/50 hover:border-primary/40 hover:text-foreground"
-                                : "bg-card/50 text-muted-foreground/40 border-border/20 cursor-not-allowed"
-                          }`}
-                        >
-                          <Icon className="size-3.5" /> {pt.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+              {/* Filter Bar */}
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => setActiveFilter("all")}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${
+                      activeFilter === "all"
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card text-muted-foreground border-border/50 hover:border-primary/40 hover:text-foreground"
+                    }`}
+                  >
+                    All ({sections.length})
+                  </button>
+                  {sections.map(section => {
+                    const pt = PRODUCT_TYPES.find(p => p.key === section.key);
+                    if (!pt) return null;
+                    const Icon = pt.icon;
+                    const ingredientCount = extractIngredientsFromSection(section.content).length;
+                    return (
+                      <button
+                        key={section.key}
+                        onClick={() => setActiveFilter(section.key)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border flex items-center gap-1.5 ${
+                          activeFilter === section.key
+                            ? `${pt.bgColor} ${pt.color} ${pt.borderColor}`
+                            : "bg-card text-muted-foreground border-border/50 hover:border-primary/40 hover:text-foreground"
+                        }`}
+                      >
+                        <Icon className="size-3.5" /> {pt.label}
+                        {ingredientCount > 0 && (
+                          <span className="text-[10px] opacity-60">({ingredientCount})</span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
                 <div className="flex items-center gap-2">
                   {generatedAt && (
@@ -562,72 +631,55 @@ function ScentConceptContent() {
                 </div>
               </div>
 
-              {/* Recipe Content - All view */}
-              {activeFilter === "all" ? (
-                <div className="space-y-4">
-                  {sections.map((section) => {
-                    const pt = PRODUCT_TYPES.find(p => p.key === section.key);
-                    if (!pt) return null;
-                    const Icon = pt.icon;
-                    return (
-                      <Card key={section.key} className="bg-card border-border/50">
-                        <CardHeader className="pb-3">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-base font-semibold flex items-center gap-2">
-                              <Icon className={`size-4 ${pt.color}`} /> {pt.label} Recipe
-                            </CardTitle>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleSaveClick(section)}
-                              className={`gap-1.5 text-xs ${pt.borderColor} ${pt.color} hover:${pt.bgColor}`}
-                            >
-                              <BookmarkPlus className="size-3.5" /> Save to Formulas
-                            </Button>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="prose prose-sm prose-invert max-w-none [&_table]:w-full [&_table]:border-collapse [&_th]:bg-secondary/50 [&_th]:text-foreground [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:text-xs [&_th]:font-semibold [&_th]:border [&_th]:border-border/30 [&_td]:px-3 [&_td]:py-2 [&_td]:text-sm [&_td]:border [&_td]:border-border/30 [&_h3]:text-accent [&_h2]:text-primary [&_strong]:text-foreground">
-                            <Streamdown>{section.content}</Streamdown>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              ) : (
-                /* Single product view */
-                (() => {
-                  const section = sections.find(s => s.key === activeFilter);
-                  const pt = PRODUCT_TYPES.find(p => p.key === activeFilter);
-                  if (!section || !pt) return null;
+              {/* Recipe Cards */}
+              {visibleSections.length === 0 && (
+                <Card className="bg-card border-border/50">
+                  <CardContent className="py-8 text-center">
+                    <p className="text-muted-foreground text-sm">No recipes found for this filter. Try selecting "All" to see all generated recipes.</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              <div className="space-y-4">
+                {visibleSections.map((section) => {
+                  const pt = PRODUCT_TYPES.find(p => p.key === section.key);
+                  if (!pt) return null;
                   const Icon = pt.icon;
+                  const ingredientCount = extractIngredientsFromSection(section.content).length;
                   return (
-                    <Card className="bg-card border-border/50">
+                    <Card key={section.key} className="bg-card border-border/50">
                       <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-base font-semibold flex items-center gap-2">
-                            <Icon className={`size-4 ${pt.color}`} /> {pt.label} Recipe
-                          </CardTitle>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className={`size-8 rounded-lg ${pt.bgColor} flex items-center justify-center shrink-0`}>
+                              <Icon className={`size-4 ${pt.color}`} />
+                            </div>
+                            <div className="min-w-0">
+                              <CardTitle className="text-base font-semibold">{pt.label} Recipe</CardTitle>
+                              <p className="text-xs text-muted-foreground">
+                                {ingredientCount > 0 ? `${ingredientCount} ingredients detected` : "Review recipe below"}
+                              </p>
+                            </div>
+                          </div>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleSaveClick(section)}
-                            className={`gap-1.5 text-xs ${pt.borderColor} ${pt.color} hover:${pt.bgColor}`}
+                            className={`gap-1.5 text-xs ${pt.borderColor} ${pt.color} hover:${pt.bgColor} shrink-0`}
                           >
-                            <BookmarkPlus className="size-3.5" /> Save to Formulas
+                            <BookmarkPlus className="size-3.5" /> Save
                           </Button>
                         </div>
                       </CardHeader>
                       <CardContent>
-                        <div className="prose prose-sm prose-invert max-w-none [&_table]:w-full [&_table]:border-collapse [&_th]:bg-secondary/50 [&_th]:text-foreground [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:text-xs [&_th]:font-semibold [&_th]:border [&_th]:border-border/30 [&_td]:px-3 [&_td]:py-2 [&_td]:text-sm [&_td]:border [&_td]:border-border/30 [&_h3]:text-accent [&_h2]:text-primary [&_strong]:text-foreground">
+                        <div className="prose prose-sm prose-invert max-w-none [&_table]:w-full [&_table]:border-collapse [&_th]:bg-secondary/50 [&_th]:text-foreground [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:text-xs [&_th]:font-semibold [&_th]:border [&_th]:border-border/30 [&_td]:px-3 [&_td]:py-2 [&_td]:text-sm [&_td]:border [&_td]:border-border/30 [&_h3]:text-accent [&_strong]:text-foreground">
                           <Streamdown>{section.content}</Streamdown>
                         </div>
                       </CardContent>
                     </Card>
                   );
-                })()
-              )}
+                })}
+              </div>
             </div>
           )}
         </div>
@@ -654,7 +706,7 @@ function ScentConceptContent() {
             </CardContent>
           </Card>
 
-          {/* Recent History (sidebar compact view) */}
+          {/* Recent History */}
           {historyItems.length > 0 && (
             <Card className="bg-card border-border/50">
               <CardHeader className="pb-3">
@@ -721,16 +773,16 @@ function ScentConceptContent() {
               <CardTitle className="text-sm font-semibold text-muted-foreground">Tips</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-xs text-muted-foreground leading-relaxed">
-              <p>Select only the product types you need to get more focused, detailed recipes.</p>
-              <p>Click <strong className="text-foreground">Save to Formulas</strong> on any recipe, or <strong className="text-foreground">Save All</strong> to add every recipe at once.</p>
-              <p>All generations are automatically saved to your history. Click <strong className="text-foreground">History</strong> to reload any past generation.</p>
-              <p>The AI matches ingredient names from your library — check the formula builder after saving to verify all ingredients were matched.</p>
+              <p>Select only the product types you need for faster, more focused recipes.</p>
+              <p>Click <strong className="text-foreground">Save</strong> on any recipe to add it to your formulas, or <strong className="text-foreground">Save All</strong> for the entire batch.</p>
+              <p>Use the filter tabs to view one product type at a time after generation.</p>
+              <p>All generations are auto-saved to History for later retrieval.</p>
             </CardContent>
           </Card>
         </div>
       </div>
 
-      {/* Save to Formulas Dialog */}
+      {/* Save Dialog */}
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent className="bg-card border-border/50">
           <DialogHeader>
@@ -738,7 +790,7 @@ function ScentConceptContent() {
               <Save className="size-5 text-primary" /> Save Recipe to Formulas
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              This will create a new formula in your formula list with the ingredients from this recipe. You can edit it further in the Formula Builder.
+              Create a new formula from this recipe. You can edit it in the Formula Builder after saving.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
@@ -759,7 +811,7 @@ function ScentConceptContent() {
                 </p>
                 <p className="text-xs text-muted-foreground mt-2 mb-1">Detected Ingredients</p>
                 <p className="text-sm text-foreground">
-                  {extractIngredientsFromSection(savingSection.content).length} ingredients found in recipe tables
+                  {extractIngredientsFromSection(savingSection.content).length} ingredients found
                 </p>
               </div>
             )}

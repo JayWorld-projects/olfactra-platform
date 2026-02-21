@@ -44,3 +44,5 @@
 - [x] Feature: Retrieve and view past Scent Lab generations
 - [x] Feature: Save complete generation (all recipes at once) to formulas list
 - [x] Feature: Add date/time stamps to saved recipes and generation history
+- [x] Fix: Scent Lab product type selection and filtering is buggy and not functioning correctly
+- [x] Fix: Some product recipes returning with zero ingredients after generation
