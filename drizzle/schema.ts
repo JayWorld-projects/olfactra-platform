@@ -72,3 +72,15 @@ export const favorites = mysqlTable("favorites", {
 
 export type Favorite = typeof favorites.$inferSelect;
 export type InsertFavorite = typeof favorites.$inferInsert;
+
+export const scentGenerations = mysqlTable("scent_generations", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  concept: text("concept").notNull(),
+  selectedTypes: json("selectedTypes").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ScentGeneration = typeof scentGenerations.$inferSelect;
+export type InsertScentGeneration = typeof scentGenerations.$inferInsert;

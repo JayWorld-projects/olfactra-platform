@@ -6,6 +6,7 @@ import {
   formulas, InsertFormula, Formula,
   formulaIngredients, InsertFormulaIngredient, FormulaIngredient,
   favorites, InsertFavorite, Favorite,
+  scentGenerations, InsertScentGeneration, ScentGeneration,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -257,6 +258,39 @@ export async function batchUpdateInventory(userId: number, updates: { id: number
   for (const u of updates) {
     await db.update(ingredients).set({ inventoryAmount: u.inventoryAmount }).where(and(eq(ingredients.id, u.id), eq(ingredients.userId, userId)));
   }
+}
+
+// ─── Scent Generations ────────────────────────────────────────────────────
+
+export async function saveGeneration(data: { userId: number; concept: string; selectedTypes: string[]; content: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(scentGenerations).values({
+    userId: data.userId,
+    concept: data.concept,
+    selectedTypes: data.selectedTypes,
+    content: data.content,
+  });
+  return result[0].insertId;
+}
+
+export async function listGenerations(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(scentGenerations).where(eq(scentGenerations.userId, userId)).orderBy(desc(scentGenerations.createdAt));
+}
+
+export async function getGeneration(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(scentGenerations).where(and(eq(scentGenerations.id, id), eq(scentGenerations.userId, userId))).limit(1);
+  return result[0];
+}
+
+export async function deleteGeneration(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(scentGenerations).where(and(eq(scentGenerations.id, id), eq(scentGenerations.userId, userId)));
 }
 
 // ─── Clone Formula ─────────────────────────────────────────────────────────

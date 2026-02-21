@@ -39,3 +39,8 @@
 - [x] Feature: Save AI-generated recipes to main formula list
 - [x] Feature: Clone Formula - duplicate an existing formula with all ingredients into a new editable copy
 - [x] Feature: Formula Comparison View - side-by-side comparison of two formulas showing shared/unique ingredients
+- [x] Fix: Scent Lab recipe generation not returning any formulas when user clicks Generate (was working, user confirmed)
+- [x] Feature: Scent Lab generation history - persist past generations in database
+- [x] Feature: Retrieve and view past Scent Lab generations
+- [x] Feature: Save complete generation (all recipes at once) to formulas list
+- [x] Feature: Add date/time stamps to saved recipes and generation history

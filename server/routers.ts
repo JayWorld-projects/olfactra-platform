@@ -11,6 +11,7 @@ import {
   removeFormulaIngredient, getIngredientUsage,
   listFavorites, addFavorite, removeFavorite, batchUpdateInventory,
   cloneFormula,
+  saveGeneration, listGenerations, getGeneration, deleteGeneration,
 } from "./db";
 import { invokeLLM } from "./_core/llm";
 
@@ -267,7 +268,21 @@ Format with clear markdown headers (## for product type, ### for recipe name). U
             { role: "user", content: prompt },
           ],
         });
-        return { content: result.choices[0]?.message?.content || "Unable to generate suggestions.", selectedTypes: input.selectedTypes };
+        const rawContent = result.choices[0]?.message?.content;
+        const content = typeof rawContent === "string" ? rawContent : "Unable to generate suggestions.";
+        // Auto-save generation to history
+        let generationId: number | null = null;
+        try {
+          generationId = await saveGeneration({
+            userId: ctx.user.id,
+            concept: input.concept,
+            selectedTypes: input.selectedTypes,
+            content,
+          });
+        } catch (e) {
+          console.warn("[ScentLab] Failed to save generation history:", e);
+        }
+        return { content, selectedTypes: input.selectedTypes, generationId };
       }),
 
     clone: protectedProcedure
@@ -299,6 +314,20 @@ Format with clear markdown headers (## for product type, ### for recipe name). U
           formulaA: { ...formulaA, ingredients: ingredientsA },
           formulaB: { ...formulaB, ingredients: ingredientsB },
         };
+      }),
+
+    generationHistory: protectedProcedure
+      .query(({ ctx }) => listGenerations(ctx.user.id)),
+
+    getGeneration: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(({ ctx, input }) => getGeneration(input.id, ctx.user.id)),
+
+    deleteGeneration: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteGeneration(input.id, ctx.user.id);
+        return { success: true };
       }),
 
     saveFromConcept: protectedProcedure
