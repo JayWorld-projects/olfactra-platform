@@ -46,3 +46,9 @@
 - [x] Feature: Add date/time stamps to saved recipes and generation history
 - [x] Fix: Scent Lab product type selection and filtering is buggy and not functioning correctly
 - [x] Fix: Some product recipes returning with zero ingredients after generation
+- [x] Fix: Formula builder - unable to correctly change weight, dilution, or percentage values (local state with blur-to-save)
+- [x] Feature: Save changes button on formula builder (auto-saves on blur)
+- [x] Feature: Rename formula from formula builder (click name to edit inline)
+- [x] Feature: Duplicate formula from formula builder (Duplicate button with name dialog)
+- [x] Feature: Formula tagging/labeling system (e.g., "Spring 2026", "Client A") with tag manager dialog
+- [x] Feature: Formula notes/journal with timestamped entries for recording observations

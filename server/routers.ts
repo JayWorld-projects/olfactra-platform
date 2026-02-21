@@ -12,6 +12,8 @@ import {
   listFavorites, addFavorite, removeFavorite, batchUpdateInventory,
   cloneFormula,
   saveGeneration, listGenerations, getGeneration, deleteGeneration,
+  listTags, createTag, deleteTag, getFormulaTags, assignTag, unassignTag,
+  listFormulaNotes, addFormulaNote, updateFormulaNote, deleteFormulaNote,
 } from "./db";
 import { invokeLLM } from "./_core/llm";
 
@@ -322,6 +324,67 @@ CRITICAL FORMATTING RULES (you MUST follow these exactly):
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
         await deleteGeneration(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    // ─── Tags ───
+    listTags: protectedProcedure.query(({ ctx }) => listTags(ctx.user.id)),
+
+    createTag: protectedProcedure
+      .input(z.object({ name: z.string().min(1), color: z.string().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await createTag({ userId: ctx.user.id, name: input.name, color: input.color });
+        return { id };
+      }),
+
+    deleteTag: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteTag(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    getFormulaTags: protectedProcedure
+      .input(z.object({ formulaId: z.number() }))
+      .query(({ input }) => getFormulaTags(input.formulaId)),
+
+    assignTag: protectedProcedure
+      .input(z.object({ formulaId: z.number(), tagId: z.number() }))
+      .mutation(async ({ input }) => {
+        await assignTag(input.formulaId, input.tagId);
+        return { success: true };
+      }),
+
+    unassignTag: protectedProcedure
+      .input(z.object({ formulaId: z.number(), tagId: z.number() }))
+      .mutation(async ({ input }) => {
+        await unassignTag(input.formulaId, input.tagId);
+        return { success: true };
+      }),
+
+    // ─── Notes ───
+    listNotes: protectedProcedure
+      .input(z.object({ formulaId: z.number() }))
+      .query(({ input }) => listFormulaNotes(input.formulaId)),
+
+    addNote: protectedProcedure
+      .input(z.object({ formulaId: z.number(), content: z.string().min(1) }))
+      .mutation(async ({ input }) => {
+        const id = await addFormulaNote({ formulaId: input.formulaId, content: input.content });
+        return { id };
+      }),
+
+    updateNote: protectedProcedure
+      .input(z.object({ id: z.number(), content: z.string().min(1) }))
+      .mutation(async ({ input }) => {
+        await updateFormulaNote(input.id, input.content);
+        return { success: true };
+      }),
+
+    deleteNote: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await deleteFormulaNote(input.id);
         return { success: true };
       }),
 

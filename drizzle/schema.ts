@@ -84,3 +84,34 @@ export const scentGenerations = mysqlTable("scent_generations", {
 
 export type ScentGeneration = typeof scentGenerations.$inferSelect;
 export type InsertScentGeneration = typeof scentGenerations.$inferInsert;
+
+export const formulaTags = mysqlTable("formula_tags", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  color: varchar("color", { length: 20 }).default("#006778"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type FormulaTag = typeof formulaTags.$inferSelect;
+export type InsertFormulaTag = typeof formulaTags.$inferInsert;
+
+export const formulaTagAssignments = mysqlTable("formula_tag_assignments", {
+  id: int("id").autoincrement().primaryKey(),
+  formulaId: int("formulaId").notNull(),
+  tagId: int("tagId").notNull(),
+});
+
+export type FormulaTagAssignment = typeof formulaTagAssignments.$inferSelect;
+export type InsertFormulaTagAssignment = typeof formulaTagAssignments.$inferInsert;
+
+export const formulaNotes = mysqlTable("formula_notes", {
+  id: int("id").autoincrement().primaryKey(),
+  formulaId: int("formulaId").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type FormulaNoteRow = typeof formulaNotes.$inferSelect;
+export type InsertFormulaNote = typeof formulaNotes.$inferInsert;

@@ -7,6 +7,9 @@ import {
   formulaIngredients, InsertFormulaIngredient, FormulaIngredient,
   favorites, InsertFavorite, Favorite,
   scentGenerations, InsertScentGeneration, ScentGeneration,
+  formulaTags, InsertFormulaTag, FormulaTag,
+  formulaTagAssignments, InsertFormulaTagAssignment, FormulaTagAssignment,
+  formulaNotes, InsertFormulaNote, FormulaNoteRow,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -291,6 +294,78 @@ export async function deleteGeneration(id: number, userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.delete(scentGenerations).where(and(eq(scentGenerations.id, id), eq(scentGenerations.userId, userId)));
+}
+
+// ─── Formula Tags ──────────────────────────────────────────────────────────
+
+export async function listTags(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(formulaTags).where(eq(formulaTags.userId, userId)).orderBy(asc(formulaTags.name));
+}
+
+export async function createTag(data: InsertFormulaTag) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(formulaTags).values(data);
+  return result[0].insertId;
+}
+
+export async function deleteTag(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(formulaTagAssignments).where(eq(formulaTagAssignments.tagId, id));
+  await db.delete(formulaTags).where(and(eq(formulaTags.id, id), eq(formulaTags.userId, userId)));
+}
+
+export async function getFormulaTags(formulaId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const assignments = await db.select().from(formulaTagAssignments).where(eq(formulaTagAssignments.formulaId, formulaId));
+  if (assignments.length === 0) return [];
+  const tagIds = assignments.map(a => a.tagId);
+  return db.select().from(formulaTags).where(inArray(formulaTags.id, tagIds));
+}
+
+export async function assignTag(formulaId: number, tagId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const existing = await db.select().from(formulaTagAssignments).where(and(eq(formulaTagAssignments.formulaId, formulaId), eq(formulaTagAssignments.tagId, tagId))).limit(1);
+  if (existing.length > 0) return;
+  await db.insert(formulaTagAssignments).values({ formulaId, tagId });
+}
+
+export async function unassignTag(formulaId: number, tagId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(formulaTagAssignments).where(and(eq(formulaTagAssignments.formulaId, formulaId), eq(formulaTagAssignments.tagId, tagId)));
+}
+
+// ─── Formula Notes ─────────────────────────────────────────────────────────
+
+export async function listFormulaNotes(formulaId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(formulaNotes).where(eq(formulaNotes.formulaId, formulaId)).orderBy(desc(formulaNotes.createdAt));
+}
+
+export async function addFormulaNote(data: InsertFormulaNote) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(formulaNotes).values(data);
+  return result[0].insertId;
+}
+
+export async function updateFormulaNote(id: number, content: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(formulaNotes).set({ content }).where(eq(formulaNotes.id, id));
+}
+
+export async function deleteFormulaNote(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(formulaNotes).where(eq(formulaNotes.id, id));
 }
 
 // ─── Clone Formula ─────────────────────────────────────────────────────────
