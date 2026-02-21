@@ -1,0 +1,23 @@
+# Project TODO
+
+- [x] Database schema for raw materials, formulas, formula entries, dilutions
+- [x] Global theming and design system (dark mode, perfumery-inspired palette)
+- [x] Dashboard layout with sidebar navigation
+- [x] Raw materials library with ingredient cards (Name, CAS, Supplier, Category, Inventory, Cost/g, IFRA limit, Longevity, Description)
+- [x] CSV/TSV import functionality to upload and parse ingredient lists
+- [x] Ingredient editing interface (add, update, delete with all fields)
+- [x] Supplier dropdown and category selection management
+- [x] Cost calculator for raw materials
+- [x] Formula builder with ingredient selection from library
+- [x] Formula entry weights with 3 decimal place precision
+- [x] Dilution management for formula entries
+- [x] Formula scaling engine (scale by factor, target weight, target concentration)
+- [x] Preserve weight/percentage/exchange solvent scaling methods
+- [x] Fragrance pyramid visualization (5 substantivity levels)
+- [x] Formula category breakdown visualization
+- [x] Formula export to Markdown, CSV/TSV
+- [x] Usage tracking table on ingredient cards (formulas using material, sorted by concentration)
+- [x] Scent concept to formula generator (AI-powered, describe memory/place → ingredient suggestions)
+- [x] Ingredient information retrieval (AI-powered deep info on demand)
+- [x] Seed database with user's 282-ingredient JayLabs library from TSV
+- [x] Vitest unit tests for server-side procedures
