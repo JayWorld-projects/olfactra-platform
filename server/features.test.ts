@@ -109,6 +109,25 @@ vi.mock("./db", () => {
     removeFavorite: vi.fn().mockResolvedValue(undefined),
     batchUpdateInventory: vi.fn().mockResolvedValue(undefined),
     cloneFormula: vi.fn().mockImplementation(async () => nextFormulaId++),
+    saveGeneration: vi.fn().mockResolvedValue(1),
+    listGenerations: vi.fn().mockImplementation(async (userId: number) => {
+      return userId === 1 ? [{
+        id: 1, userId: 1, concept: "A warm summer evening",
+        selectedTypes: JSON.stringify(["perfume", "candle"]),
+        content: "## PERFUME\nTest content",
+        createdAt: new Date(),
+      }] : [];
+    }),
+    getGeneration: vi.fn().mockImplementation(async (id: number, userId: number) => {
+      if (id === 1 && userId === 1) return {
+        id: 1, userId: 1, concept: "A warm summer evening",
+        selectedTypes: JSON.stringify(["perfume", "candle"]),
+        content: "## PERFUME\nTest content",
+        createdAt: new Date(),
+      };
+      return undefined;
+    }),
+    deleteGeneration: vi.fn().mockResolvedValue(undefined),
     upsertUser: vi.fn().mockResolvedValue(undefined),
     getUserByOpenId: vi.fn().mockResolvedValue(undefined),
     getDb: vi.fn().mockResolvedValue(null),
@@ -564,5 +583,47 @@ describe("shared perfumery constants", () => {
     expect(CATEGORY_COLORS["Woody"]).toBeDefined();
     expect(CATEGORY_COLORS["Citrus"]).toBeDefined();
     expect(CATEGORY_COLORS["Gourmand"]).toBeDefined();
+  });
+});
+
+describe("generation history", () => {
+  it("lists generation history for authenticated user", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.formula.generationHistory();
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBeGreaterThan(0);
+    expect(result[0]).toHaveProperty("concept");
+    expect(result[0]).toHaveProperty("content");
+    expect(result[0]).toHaveProperty("selectedTypes");
+    expect(result[0]).toHaveProperty("createdAt");
+  });
+
+  it("retrieves a specific generation by id", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.formula.getGeneration({ id: 1 });
+    expect(result).toBeDefined();
+    expect(result?.concept).toBe("A warm summer evening");
+  });
+
+  it("returns undefined for non-existent generation", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.formula.getGeneration({ id: 999 });
+    expect(result).toBeUndefined();
+  });
+
+  it("deletes a generation from history", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.formula.deleteGeneration({ id: 1 });
+    expect(result).toEqual({ success: true });
+  });
+
+  it("rejects unauthenticated generation history access", async () => {
+    const ctx = createUnauthContext();
+    const caller = appRouter.createCaller(ctx);
+    await expect(caller.formula.generationHistory()).rejects.toThrow();
   });
 });

@@ -699,6 +699,20 @@ IMPORTANT:
         };
       }),
 
+    generationHistory: protectedProcedure
+      .query(({ ctx }) => listGenerations(ctx.user.id)),
+
+    getGeneration: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(({ ctx, input }) => getGeneration(input.id, ctx.user.id)),
+
+    deleteGeneration: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteGeneration(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
     saveFromConcept: protectedProcedure
       .input(z.object({
         name: z.string().min(1),

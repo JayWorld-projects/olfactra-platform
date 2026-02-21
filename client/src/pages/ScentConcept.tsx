@@ -270,7 +270,6 @@ function extractIngredientsFromSection(content: string): { ingredientName: strin
     if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
       const cells = trimmed.split("|").filter(c => c.trim() !== "");
       if (!inTable) {
-        // Header row
         cells.forEach((cell, idx) => {
           const cl = cell.trim().toLowerCase();
           if (cl.includes("ingredient") || cl.includes("material") || cl.includes("name") || cl.includes("component") || cl.includes("fragrance")) {
@@ -282,7 +281,6 @@ function extractIngredientsFromSection(content: string): { ingredientName: strin
         });
         inTable = true;
       } else if (trimmed.includes("---")) {
-        // Separator row
         continue;
       } else if (nameCol >= 0 && weightCol >= 0 && nameCol < cells.length && weightCol < cells.length) {
         const name = cells[nameCol].trim().replace(/\*\*/g, "");
@@ -300,6 +298,18 @@ function extractIngredientsFromSection(content: string): { ingredientName: strin
     }
   }
   return ingredients;
+}
+
+function formatDate(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
 }
 
 export default function ScentConcept() {
@@ -421,7 +431,16 @@ function ScentConceptContent() {
     setShowHistory(false);
   };
 
-  const sections = useMemo(() => result ? parseProductSections(result) : [], [result]);
+  const handleLoadHistory = (gen: { id: number; concept: string; selectedTypes: unknown; content: string; createdAt: Date }) => {
+    setViewingHistoryId(gen.id);
+    setConcept(gen.concept);
+    const types = gen.selectedTypes as ProductTypeKey[];
+    setGeneratedTypes(types);
+    setResult(gen.content);
+    setActiveFilter("all");
+    setGeneratedAt(new Date(gen.createdAt));
+    setShowHistory(false);
+  };
 
   // Filter sections based on active filter
   const visibleSections = useMemo(() => {
@@ -915,6 +934,67 @@ function ScentConceptContent() {
             </CardContent>
           </Card>
 
+          {/* Recent History (sidebar compact view) */}
+          {historyItems.length > 0 && (
+            <Card className="bg-card border-border/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <History className="size-4 text-primary" /> Recent
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {historyItems.slice(0, 5).map((gen) => {
+                  const types = gen.selectedTypes as ProductTypeKey[];
+                  const isActive = viewingHistoryId === gen.id;
+                  return (
+                    <button
+                      key={gen.id}
+                      onClick={() => handleLoadHistory(gen)}
+                      className={`w-full text-left p-2.5 rounded-lg border transition-all ${
+                        isActive
+                          ? "bg-primary/10 border-primary/30"
+                          : "border-border/30 hover:border-primary/30 hover:bg-secondary/40"
+                      }`}
+                    >
+                      <p className="text-xs font-medium text-foreground truncate">
+                        {gen.concept.slice(0, 60)}{gen.concept.length > 60 ? "..." : ""}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <Clock className="size-2.5 text-muted-foreground" />
+                        <span className="text-[10px] text-muted-foreground">{formatDate(gen.createdAt)}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {types.slice(0, 4).map(t => {
+                          const pt = PRODUCT_TYPES.find(p => p.key === t);
+                          if (!pt) return null;
+                          const Icon = pt.icon;
+                          return (
+                            <span key={t} className={`${pt.color}`}>
+                              <Icon className="size-3" />
+                            </span>
+                          );
+                        })}
+                        {types.length > 4 && (
+                          <span className="text-[10px] text-muted-foreground">+{types.length - 4}</span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+                {historyItems.length > 5 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowHistory(true)}
+                    className="w-full text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    View all {historyItems.length} generations
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Tips */}
           <Card className="bg-card border-border/50">
             <CardHeader className="pb-3">
@@ -922,7 +1002,8 @@ function ScentConceptContent() {
             </CardHeader>
             <CardContent className="space-y-2 text-xs text-muted-foreground leading-relaxed">
               <p>Select only the product types you need to get more focused, detailed recipes.</p>
-              <p>Click <strong className="text-foreground">Save to Formulas</strong> on any recipe to add it to your formula list for editing and scaling.</p>
+              <p>Click <strong className="text-foreground">Save to Formulas</strong> on any recipe, or <strong className="text-foreground">Save All</strong> to add every recipe at once.</p>
+              <p>All generations are automatically saved to your history. Click <strong className="text-foreground">History</strong> to reload any past generation.</p>
               <p>The AI matches ingredient names from your library — check the formula builder after saving to verify all ingredients were matched.</p>
             </CardContent>
           </Card>
