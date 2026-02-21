@@ -17,6 +17,7 @@ import { LONGEVITY_LABELS, LONGEVITY_COLORS, CATEGORY_COLORS } from "@shared/per
 import {
   ArrowLeft, Plus, Trash2, Scale, Download, Loader2, FlaskConical,
   AlertTriangle, Save, Copy, Tag, StickyNote, X, Check, Pencil, DollarSign, TrendingUp, BarChart3, Info,
+  History, RotateCcw, ArrowRightLeft, Sparkles, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
@@ -91,6 +92,11 @@ function BuilderContent() {
   const [noteContent, setNoteContent] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
   const [editingNoteContent, setEditingNoteContent] = useState("");
+  const [showSaveVersion, setShowSaveVersion] = useState(false);
+  const [versionLabel, setVersionLabel] = useState("");
+  const [showRevert, setShowRevert] = useState<number | null>(null);
+  const [compareVersions, setCompareVersions] = useState<[number | null, number | null]>([null, null]);
+  const [showSubstitution, setShowSubstitution] = useState<{ ingredientId: number; ingredientName: string; fiId: number } | null>(null);
 
   const { activeWorkspaceId } = useWorkspace();
   const { data: formula, isLoading } = trpc.formula.get.useQuery({ id: formulaId });
@@ -110,6 +116,7 @@ function BuilderContent() {
   const { data: formulaTags } = trpc.formula.getFormulaTags.useQuery({ formulaId });
   const { data: allTags } = trpc.formula.listTags.useQuery();
   const { data: notes } = trpc.formula.listNotes.useQuery({ formulaId });
+  const { data: versions } = trpc.version.list.useQuery({ formulaId });
   const utils = trpc.useUtils();
 
   const invalidateFormula = () => utils.formula.get.invalidate({ id: formulaId });
@@ -149,6 +156,16 @@ function BuilderContent() {
   const deleteNoteMutation = trpc.formula.deleteNote.useMutation({
     onSuccess: () => { utils.formula.listNotes.invalidate({ formulaId }); toast.success("Note deleted"); },
   });
+  const createVersionMutation = trpc.version.create.useMutation({
+    onSuccess: (data) => { utils.version.list.invalidate({ formulaId }); setShowSaveVersion(false); setVersionLabel(""); toast.success(`Saved as Version ${data.versionNumber}`); },
+  });
+  const revertVersionMutation = trpc.version.revert.useMutation({
+    onSuccess: (data) => { invalidateFormula(); utils.version.list.invalidate({ formulaId }); setShowRevert(null); toast.success(`Reverted to Version ${data.versionNumber}`); },
+  });
+  const deleteVersionMutation = trpc.version.delete.useMutation({
+    onSuccess: () => { utils.version.list.invalidate({ formulaId }); toast.success("Version deleted"); },
+  });
+  const substitutionMutation = trpc.substitution.suggest.useMutation();
 
   const [selectedIngredientId, setSelectedIngredientId] = useState<string>("");
   const [addWeight, setAddWeight] = useState("1.000");
@@ -582,6 +599,7 @@ ${[0,1,2,3,4,5].map(level => {
           <TabsTrigger value="categories">Category Breakdown</TabsTrigger>
           <TabsTrigger value="notes">Notes ({notes?.length || 0})</TabsTrigger>
           <TabsTrigger value="costs"><DollarSign className="size-3.5 mr-1" />Cost Breakdown</TabsTrigger>
+          <TabsTrigger value="history"><History className="size-3.5 mr-1" />History ({versions?.length || 0})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="ingredients">
@@ -649,9 +667,18 @@ ${[0,1,2,3,4,5].map(level => {
                             <TableCell className="text-right text-sm tabular-nums">{pct.toFixed(2)}%</TableCell>
                             <TableCell className="text-right text-sm tabular-nums text-accent">${cost.toFixed(2)}</TableCell>
                             <TableCell>
-                              <Button variant="ghost" size="icon" className="size-7 text-destructive hover:bg-destructive/10" onClick={() => removeIngredientMutation.mutate({ id: fi.id })}>
-                                <Trash2 className="size-3" />
-                              </Button>
+                              <div className="flex items-center gap-0.5">
+                                <Button variant="ghost" size="icon" className="size-7 text-primary hover:bg-primary/10" title="Find substitutes"
+                                  onClick={() => {
+                                    setShowSubstitution({ ingredientId: fi.ingredientId, ingredientName: fi.ingredient?.name || "Unknown", fiId: fi.id });
+                                    substitutionMutation.mutate({ ingredientId: fi.ingredientId, ingredientName: fi.ingredient?.name || "Unknown", formulaId });
+                                  }}>
+                                  <ArrowRightLeft className="size-3" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="size-7 text-destructive hover:bg-destructive/10" onClick={() => removeIngredientMutation.mutate({ id: fi.id })}>
+                                  <Trash2 className="size-3" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         );
@@ -922,9 +949,220 @@ ${[0,1,2,3,4,5].map(level => {
             </Card>
           </div>
         </TabsContent>
+
+        <TabsContent value="history">
+          <div className="space-y-4">
+            <Card className="bg-card border-border/50">
+              <CardHeader className="flex flex-row items-center justify-between py-3">
+                <CardTitle className="text-base font-semibold">Version History</CardTitle>
+                <Button size="sm" onClick={() => { setShowSaveVersion(true); setVersionLabel(""); }} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                  <Save className="size-3.5 mr-1" /> Save Snapshot
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {(!versions || versions.length === 0) ? (
+                  <div className="flex flex-col items-center gap-3 py-10 text-center">
+                    <div className="size-12 rounded-xl bg-secondary flex items-center justify-center">
+                      <History className="size-6 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">No versions saved yet. Save a snapshot to track changes over time.</p>
+                    <Button variant="outline" size="sm" onClick={() => { setShowSaveVersion(true); setVersionLabel(""); }}>
+                      <Save className="size-3.5 mr-1" />Save First Snapshot
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {versions.map((v: any) => {
+                      const snapshot = v.snapshot as any;
+                      const isExpanded = compareVersions[0] === v.id || compareVersions[1] === v.id;
+                      return (
+                        <Card key={v.id} className={`border-border/30 transition-all ${isExpanded ? "bg-primary/5 border-primary/30" : "bg-secondary/30"}`}>
+                          <CardContent className="p-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                  <span className="text-xs font-bold text-primary">v{v.versionNumber}</span>
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium">{v.label || `Version ${v.versionNumber}`}</p>
+                                  <p className="text-[11px] text-muted-foreground">
+                                    {new Date(v.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                    {snapshot?.ingredients && <span className="ml-2">· {snapshot.ingredients.length} ingredients</span>}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setCompareVersions(prev => prev[0] === v.id ? [null, prev[1]] : [v.id, prev[1]])}>
+                                  {isExpanded ? <ChevronUp className="size-3 mr-1" /> : <ChevronDown className="size-3 mr-1" />}
+                                  {isExpanded ? "Collapse" : "Details"}
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-7 text-xs text-primary" onClick={() => setShowRevert(v.id)}>
+                                  <RotateCcw className="size-3 mr-1" />Revert
+                                </Button>
+                                <Button variant="ghost" size="icon" className="size-7 text-destructive hover:bg-destructive/10" onClick={() => deleteVersionMutation.mutate({ id: v.id })}>
+                                  <Trash2 className="size-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            {isExpanded && snapshot && (
+                              <div className="mt-3 pt-3 border-t border-border/30">
+                                <div className="grid grid-cols-3 gap-3 mb-3">
+                                  <div className="text-center p-2 bg-background rounded-lg">
+                                    <p className="text-xs text-muted-foreground">Ingredients</p>
+                                    <p className="text-lg font-semibold">{snapshot.ingredients?.length || 0}</p>
+                                  </div>
+                                  <div className="text-center p-2 bg-background rounded-lg">
+                                    <p className="text-xs text-muted-foreground">Total Weight</p>
+                                    <p className="text-lg font-semibold">{parseFloat(snapshot.totalWeight || "0").toFixed(1)}g</p>
+                                  </div>
+                                  <div className="text-center p-2 bg-background rounded-lg">
+                                    <p className="text-xs text-muted-foreground">Solvent</p>
+                                    <p className="text-lg font-semibold">{parseFloat(snapshot.solventWeight || "0").toFixed(1)}g</p>
+                                  </div>
+                                </div>
+                                <div className="overflow-x-auto">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow className="border-border/30">
+                                        <TableHead className="text-xs text-muted-foreground">Ingredient</TableHead>
+                                        <TableHead className="text-xs text-muted-foreground">Category</TableHead>
+                                        <TableHead className="text-right text-xs text-muted-foreground">Weight (g)</TableHead>
+                                        <TableHead className="text-right text-xs text-muted-foreground">Dilution %</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {(snapshot.ingredients || []).map((ing: any, idx: number) => (
+                                        <TableRow key={idx} className="border-border/20">
+                                          <TableCell className="text-xs font-medium py-1.5">{ing.ingredientName}</TableCell>
+                                          <TableCell className="text-xs text-muted-foreground py-1.5">{ing.category || "—"}</TableCell>
+                                          <TableCell className="text-right text-xs tabular-nums py-1.5">{parseFloat(ing.weight || "0").toFixed(3)}</TableCell>
+                                          <TableCell className="text-right text-xs tabular-nums py-1.5">{ing.dilutionPercent || "100"}%</TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* ─── Dialogs ─── */}
+
+      {/* Save Version Dialog */}
+      <Dialog open={showSaveVersion} onOpenChange={setShowSaveVersion}>
+        <DialogContent className="bg-card border-border/50">
+          <DialogHeader><DialogTitle>Save Version Snapshot</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">This will save a snapshot of the current formula state that you can revert to later.</p>
+          <div>
+            <Label className="text-xs text-muted-foreground">Version Label (optional)</Label>
+            <Input placeholder="e.g., Before adding musk notes" value={versionLabel} onChange={e => setVersionLabel(e.target.value)} className="bg-background border-border/50" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSaveVersion(false)}>Cancel</Button>
+            <Button onClick={() => createVersionMutation.mutate({ formulaId, label: versionLabel.trim() || undefined })} disabled={createVersionMutation.isPending} className="bg-primary text-primary-foreground">
+              {createVersionMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <><Save className="size-3.5 mr-1" />Save Snapshot</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Revert Confirmation */}
+      <AlertDialog open={showRevert !== null} onOpenChange={(open) => !open && setShowRevert(null)}>
+        <AlertDialogContent className="bg-card border-border/50">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revert to this version?</AlertDialogTitle>
+            <AlertDialogDescription>This will replace the current formula ingredients and settings with the saved snapshot. Your current state will be lost unless you save a version first.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-primary text-primary-foreground" onClick={() => showRevert && revertVersionMutation.mutate({ formulaId, versionId: showRevert })}>
+              <RotateCcw className="size-3.5 mr-1" />Revert
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Substitution Dialog */}
+      <Dialog open={showSubstitution !== null} onOpenChange={(open) => !open && setShowSubstitution(null)}>
+        <DialogContent className="bg-card border-border/50 max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ArrowRightLeft className="size-4 text-primary" />
+              Substitutes for {showSubstitution?.ingredientName}
+            </DialogTitle>
+          </DialogHeader>
+          {substitutionMutation.isPending ? (
+            <div className="flex flex-col items-center gap-3 py-8">
+              <Loader2 className="size-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Finding similar ingredients in your library...</p>
+            </div>
+          ) : substitutionMutation.isError ? (
+            <div className="flex flex-col items-center gap-3 py-8">
+              <AlertTriangle className="size-8 text-destructive" />
+              <p className="text-sm text-muted-foreground">Failed to find substitutes. Please try again.</p>
+              <Button variant="outline" size="sm" onClick={() => showSubstitution && substitutionMutation.mutate({ ingredientId: showSubstitution.ingredientId, ingredientName: showSubstitution.ingredientName, formulaId })}>
+                Retry
+              </Button>
+            </div>
+          ) : (substitutionMutation.data?.suggestions || []).length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-8">
+              <Info className="size-8 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">No suitable substitutes found in your library.</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+              {(substitutionMutation.data?.suggestions || []).map((s: any, idx: number) => (
+                <Card key={idx} className="bg-secondary/50 border-border/30">
+                  <CardContent className="p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">{s.name}</span>
+                        <Badge variant="outline" className="text-[10px] border-primary/40 text-primary">{s.similarity}% match</Badge>
+                        <Badge variant="outline" className={`text-[10px] ${
+                          s.costComparison === "cheaper" ? "border-green-500/40 text-green-400" :
+                          s.costComparison === "more expensive" ? "border-amber-500/40 text-amber-400" :
+                          "border-border/50 text-muted-foreground"
+                        }`}>
+                          {s.costComparison === "cheaper" ? "↓ Cheaper" : s.costComparison === "more expensive" ? "↑ Pricier" : "≈ Similar cost"}
+                        </Badge>
+                      </div>
+                      <Button size="sm" variant="outline" className="h-7 text-xs border-primary/40 text-primary hover:bg-primary/10"
+                        onClick={() => {
+                          if (!showSubstitution) return;
+                          // Remove old ingredient and add new one with same weight
+                          const oldFi = formulaIngredients.find((fi: any) => fi.id === showSubstitution.fiId);
+                          const weight = oldFi?.weight || "1.000";
+                          const dilution = oldFi?.dilutionPercent || "100";
+                          removeIngredientMutation.mutate({ id: showSubstitution.fiId }, {
+                            onSuccess: () => {
+                              addIngredientMutation.mutate({ formulaId, ingredientId: s.ingredientId, weight, dilutionPercent: dilution }, {
+                                onSuccess: () => { toast.success(`Swapped ${showSubstitution.ingredientName} → ${s.name}`); setShowSubstitution(null); },
+                              });
+                            },
+                          });
+                        }}>
+                        <ArrowRightLeft className="size-3 mr-1" />Swap
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{s.reason}</p>
+                    <p className="text-xs text-foreground/70"><span className="font-medium">Difference:</span> {s.difference}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Add Ingredient Dialog */}
       <Dialog open={showAddIngredient} onOpenChange={setShowAddIngredient}>

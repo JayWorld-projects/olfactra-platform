@@ -12,6 +12,7 @@ import {
   formulaNotes, InsertFormulaNote, FormulaNoteRow,
   workspaces, InsertWorkspace, Workspace,
   workspaceIngredients, InsertWorkspaceIngredient, WorkspaceIngredient,
+  formulaVersions, InsertFormulaVersion, FormulaVersion,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -475,4 +476,94 @@ export async function cloneFormula(formulaId: number, userId: number, newName: s
     });
   }
   return newId;
+}
+
+// ─── Formula Versions ─────────────────────────────────────────────────────
+
+export async function createFormulaVersion(formulaId: number, userId: number, label?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Get current formula state
+  const formula = await getFormula(formulaId, userId);
+  if (!formula) throw new Error("Formula not found");
+  const items = await getFormulaIngredients(formulaId);
+  // Get next version number
+  const existing = await db.select({ vn: sql<number>`MAX(versionNumber)` })
+    .from(formulaVersions)
+    .where(eq(formulaVersions.formulaId, formulaId));
+  const nextVersion = (existing[0]?.vn ?? 0) + 1;
+  // Build snapshot
+  const snapshot = {
+    name: formula.name,
+    description: formula.description,
+    solvent: formula.solvent,
+    solventWeight: formula.solventWeight,
+    totalWeight: formula.totalWeight,
+    status: formula.status,
+    ingredients: items.map(i => ({
+      ingredientId: i.ingredientId,
+      ingredientName: i.ingredient?.name || "Unknown",
+      category: i.ingredient?.category || null,
+      weight: i.weight,
+      dilutionPercent: i.dilutionPercent,
+      note: i.note,
+    })),
+  };
+  const result = await db.insert(formulaVersions).values({
+    formulaId,
+    versionNumber: nextVersion,
+    label: label || `Version ${nextVersion}`,
+    snapshot,
+  });
+  return { id: result[0].insertId, versionNumber: nextVersion };
+}
+
+export async function listFormulaVersions(formulaId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(formulaVersions)
+    .where(eq(formulaVersions.formulaId, formulaId))
+    .orderBy(desc(formulaVersions.versionNumber));
+}
+
+export async function getFormulaVersion(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(formulaVersions).where(eq(formulaVersions.id, id)).limit(1);
+  return result[0];
+}
+
+export async function revertFormulaToVersion(formulaId: number, versionId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const version = await getFormulaVersion(versionId);
+  if (!version || version.formulaId !== formulaId) throw new Error("Version not found");
+  const snapshot = version.snapshot as any;
+  // Update formula metadata
+  await updateFormula(formulaId, userId, {
+    name: snapshot.name,
+    description: snapshot.description,
+    solvent: snapshot.solvent,
+    solventWeight: snapshot.solventWeight,
+    totalWeight: snapshot.totalWeight,
+    status: snapshot.status,
+  });
+  // Replace all ingredients
+  await db.delete(formulaIngredients).where(eq(formulaIngredients.formulaId, formulaId));
+  for (const ing of snapshot.ingredients) {
+    await addFormulaIngredient({
+      formulaId,
+      ingredientId: ing.ingredientId,
+      weight: ing.weight,
+      dilutionPercent: ing.dilutionPercent,
+      note: ing.note,
+    });
+  }
+  return { success: true, versionNumber: version.versionNumber };
+}
+
+export async function deleteFormulaVersion(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(formulaVersions).where(eq(formulaVersions.id, id));
 }

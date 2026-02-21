@@ -68,3 +68,9 @@
 - [x] Feature: Save generated formula and continue generating more variations from same idea
 - [x] Feature: Multi-step wizard UI (pick ingredients → enter idea → generate → save/regenerate)
 - [x] Fix: AI ingredient ID matching with name-based fallback for reliable formula generation
+- [x] Feature: Formula version history - save snapshots each time a formula is edited
+- [x] Feature: Expand version details to view full ingredient snapshot
+- [x] Feature: Revert formula to a previous version with confirmation dialog
+- [x] Feature: Version history tab in Formula Builder with save/expand/revert/delete
+- [x] Feature: AI ingredient substitution suggestions - suggest similar alternatives from library with match %, cost comparison, and reasoning
+- [x] Feature: Substitution dialog in Formula Builder with one-click swap-in-place functionality

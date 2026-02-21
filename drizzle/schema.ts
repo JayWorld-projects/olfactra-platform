@@ -136,3 +136,15 @@ export const workspaceIngredients = mysqlTable("workspace_ingredients", {
 
 export type WorkspaceIngredient = typeof workspaceIngredients.$inferSelect;
 export type InsertWorkspaceIngredient = typeof workspaceIngredients.$inferInsert;
+
+export const formulaVersions = mysqlTable("formula_versions", {
+  id: int("id").autoincrement().primaryKey(),
+  formulaId: int("formulaId").notNull(),
+  versionNumber: int("versionNumber").notNull(),
+  label: varchar("label", { length: 255 }),
+  snapshot: json("snapshot").notNull(), // { name, description, solvent, solventWeight, ingredients: [{ingredientId, ingredientName, weight, dilutionPercent, note}] }
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type FormulaVersion = typeof formulaVersions.$inferSelect;
+export type InsertFormulaVersion = typeof formulaVersions.$inferInsert;
