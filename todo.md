@@ -53,3 +53,9 @@
 - [x] Feature: Formula tagging/labeling system (e.g., "Spring 2026", "Client A") with tag manager dialog
 - [x] Feature: Formula notes/journal with timestamped entries for recording observations
 - [x] Feature: Random inspiration prompt generator on Scent Lab page (46 prompts across 6 categories with shuffle)
+- [x] Feature: Workspace system - create named workspaces with all or selected ingredients
+- [x] Feature: Workspace database schema (workspaces table + workspace_ingredients junction table)
+- [x] Feature: Workspace CRUD operations (create, read, update, delete)
+- [x] Feature: Workspace management page with ingredient selection UI
+- [x] Feature: Workspace switcher in sidebar/header for quick context switching
+- [x] Feature: Filter Library, Formula Builder, and Scent Lab by active workspace

@@ -10,6 +10,8 @@ import {
   formulaTags, InsertFormulaTag, FormulaTag,
   formulaTagAssignments, InsertFormulaTagAssignment, FormulaTagAssignment,
   formulaNotes, InsertFormulaNote, FormulaNoteRow,
+  workspaces, InsertWorkspace, Workspace,
+  workspaceIngredients, InsertWorkspaceIngredient, WorkspaceIngredient,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -366,6 +368,84 @@ export async function deleteFormulaNote(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.delete(formulaNotes).where(eq(formulaNotes.id, id));
+}
+
+// ─── Workspaces ───────────────────────────────────────────────────────────
+
+export async function listWorkspaces(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(workspaces).where(eq(workspaces.userId, userId)).orderBy(asc(workspaces.name));
+}
+
+export async function getWorkspace(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(workspaces).where(and(eq(workspaces.id, id), eq(workspaces.userId, userId))).limit(1);
+  return result[0];
+}
+
+export async function createWorkspace(data: InsertWorkspace) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(workspaces).values(data);
+  return result[0].insertId;
+}
+
+export async function updateWorkspace(id: number, userId: number, data: { name?: string; description?: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(workspaces).set(data).where(and(eq(workspaces.id, id), eq(workspaces.userId, userId)));
+}
+
+export async function deleteWorkspace(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Delete all workspace ingredient associations first
+  await db.delete(workspaceIngredients).where(eq(workspaceIngredients.workspaceId, id));
+  await db.delete(workspaces).where(and(eq(workspaces.id, id), eq(workspaces.userId, userId)));
+}
+
+export async function getWorkspaceIngredientIds(workspaceId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select({ ingredientId: workspaceIngredients.ingredientId })
+    .from(workspaceIngredients)
+    .where(eq(workspaceIngredients.workspaceId, workspaceId));
+  return rows.map(r => r.ingredientId);
+}
+
+export async function setWorkspaceIngredients(workspaceId: number, ingredientIds: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Clear existing associations
+  await db.delete(workspaceIngredients).where(eq(workspaceIngredients.workspaceId, workspaceId));
+  // Insert new associations
+  if (ingredientIds.length > 0) {
+    const values = ingredientIds.map(ingredientId => ({ workspaceId, ingredientId }));
+    await db.insert(workspaceIngredients).values(values);
+  }
+}
+
+export async function getWorkspaceIngredientCount(workspaceId: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db.select({ count: sql<number>`COUNT(*)` })
+    .from(workspaceIngredients)
+    .where(eq(workspaceIngredients.workspaceId, workspaceId));
+  return result[0]?.count ?? 0;
+}
+
+export async function listWorkspacesWithCounts(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const ws = await db.select().from(workspaces).where(eq(workspaces.userId, userId)).orderBy(asc(workspaces.name));
+  const result = [];
+  for (const w of ws) {
+    const count = await getWorkspaceIngredientCount(w.id);
+    result.push({ ...w, ingredientCount: count });
+  }
+  return result;
 }
 
 // ─── Clone Formula ─────────────────────────────────────────────────────────

@@ -14,6 +14,8 @@ import {
   saveGeneration, listGenerations, getGeneration, deleteGeneration,
   listTags, createTag, deleteTag, getFormulaTags, assignTag, unassignTag,
   listFormulaNotes, addFormulaNote, updateFormulaNote, deleteFormulaNote,
+  listWorkspacesWithCounts, getWorkspace, createWorkspace, updateWorkspace, deleteWorkspace,
+  getWorkspaceIngredientIds, setWorkspaceIngredients,
 } from "./db";
 import { invokeLLM } from "./_core/llm";
 
@@ -220,9 +222,19 @@ Please provide the following information in a well-structured format:
       .input(z.object({
         concept: z.string().min(1),
         selectedTypes: z.array(z.enum(["perfume", "candle", "lotion", "bodywash", "incense", "bodyspray", "humidifier"])).min(1),
+        workspaceId: z.number().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const allIngredients = await listIngredients(ctx.user.id);
+        let allIngredients = await listIngredients(ctx.user.id);
+        // Filter by workspace if specified
+        if (input.workspaceId) {
+          const ws = await getWorkspace(input.workspaceId, ctx.user.id);
+          if (ws) {
+            const wsIngredientIds = await getWorkspaceIngredientIds(ws.id);
+            const wsIdSet = new Set(wsIngredientIds);
+            allIngredients = allIngredients.filter(i => wsIdSet.has(i.id));
+          }
+        }
         const ingredientList = allIngredients.map(i =>
           `- ${i.name} (Category: ${i.category || "N/A"}, Longevity: ${i.longevity ?? "N/A"}/5, IFRA Limit: ${i.ifraLimit || "N/A"}%)`
         ).join("\n");
@@ -421,6 +433,76 @@ CRITICAL FORMATTING RULES (you MUST follow these exactly):
           }
         }
         return { formulaId, addedCount, totalRequested: input.ingredients.length };
+      }),
+  }),
+
+  workspace: router({
+    list: protectedProcedure.query(({ ctx }) => listWorkspacesWithCounts(ctx.user.id)),
+
+    get: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const ws = await getWorkspace(input.id, ctx.user.id);
+        if (!ws) return null;
+        const ingredientIds = await getWorkspaceIngredientIds(ws.id);
+        return { ...ws, ingredientIds };
+      }),
+
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        description: z.string().optional(),
+        ingredientIds: z.array(z.number()),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await createWorkspace({ name: input.name, description: input.description, userId: ctx.user.id });
+        if (input.ingredientIds.length > 0) {
+          await setWorkspaceIngredients(id, input.ingredientIds);
+        }
+        return { id };
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().min(1).optional(),
+        description: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { id, ...data } = input;
+        await updateWorkspace(id, ctx.user.id, data);
+        return { success: true };
+      }),
+
+    setIngredients: protectedProcedure
+      .input(z.object({
+        workspaceId: z.number(),
+        ingredientIds: z.array(z.number()),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Verify workspace belongs to user
+        const ws = await getWorkspace(input.workspaceId, ctx.user.id);
+        if (!ws) throw new Error("Workspace not found");
+        await setWorkspaceIngredients(input.workspaceId, input.ingredientIds);
+        return { success: true, count: input.ingredientIds.length };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteWorkspace(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    ingredients: protectedProcedure
+      .input(z.object({ workspaceId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const ws = await getWorkspace(input.workspaceId, ctx.user.id);
+        if (!ws) return [];
+        const ingredientIds = await getWorkspaceIngredientIds(ws.id);
+        if (ingredientIds.length === 0) return [];
+        const allIngredients = await listIngredients(ctx.user.id);
+        return allIngredients.filter(i => ingredientIds.includes(i.id));
       }),
   }),
 });

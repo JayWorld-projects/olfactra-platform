@@ -115,3 +115,24 @@ export const formulaNotes = mysqlTable("formula_notes", {
 
 export type FormulaNoteRow = typeof formulaNotes.$inferSelect;
 export type InsertFormulaNote = typeof formulaNotes.$inferInsert;
+
+export const workspaces = mysqlTable("workspaces", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Workspace = typeof workspaces.$inferSelect;
+export type InsertWorkspace = typeof workspaces.$inferInsert;
+
+export const workspaceIngredients = mysqlTable("workspace_ingredients", {
+  id: int("id").autoincrement().primaryKey(),
+  workspaceId: int("workspaceId").notNull(),
+  ingredientId: int("ingredientId").notNull(),
+});
+
+export type WorkspaceIngredient = typeof workspaceIngredients.$inferSelect;
+export type InsertWorkspaceIngredient = typeof workspaceIngredients.$inferInsert;

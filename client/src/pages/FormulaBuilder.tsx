@@ -21,6 +21,7 @@ import {
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -91,8 +92,21 @@ function BuilderContent() {
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
   const [editingNoteContent, setEditingNoteContent] = useState("");
 
+  const { activeWorkspaceId } = useWorkspace();
   const { data: formula, isLoading } = trpc.formula.get.useQuery({ id: formulaId });
   const { data: allIngredients } = trpc.ingredient.list.useQuery({});
+  const { data: workspaceData } = trpc.workspace.get.useQuery(
+    { id: activeWorkspaceId! },
+    { enabled: !!activeWorkspaceId }
+  );
+
+  // Filter ingredients by active workspace for the ingredient picker
+  const availableIngredients = useMemo(() => {
+    if (!allIngredients) return [];
+    if (!activeWorkspaceId || !workspaceData) return allIngredients;
+    const wsIds = new Set(workspaceData.ingredientIds);
+    return allIngredients.filter(i => wsIds.has(i.id));
+  }, [allIngredients, activeWorkspaceId, workspaceData]);
   const { data: formulaTags } = trpc.formula.getFormulaTags.useQuery({ formulaId });
   const { data: allTags } = trpc.formula.listTags.useQuery();
   const { data: notes } = trpc.formula.listNotes.useQuery({ formulaId });
@@ -142,13 +156,13 @@ function BuilderContent() {
   const [ingredientSearch, setIngredientSearch] = useState("");
 
   const filteredAddIngredients = useMemo(() => {
-    if (!allIngredients) return [];
+    if (!availableIngredients) return [];
     const existingIds = new Set(formula?.ingredients?.map((fi: any) => fi.ingredientId) || []);
-    return allIngredients.filter(i =>
+    return availableIngredients.filter(i =>
       !existingIds.has(i.id) &&
       (!ingredientSearch || i.name.toLowerCase().includes(ingredientSearch.toLowerCase()))
     );
-  }, [allIngredients, formula, ingredientSearch]);
+  }, [availableIngredients, formula, ingredientSearch]);
 
   const formulaIngredients = formula?.ingredients || [];
   const concentrateWeight = useMemo(() =>

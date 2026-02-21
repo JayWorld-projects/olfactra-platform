@@ -20,6 +20,7 @@ import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
 import { useLocation } from "wouter";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 type ProductTypeKey = "perfume" | "candle" | "lotion" | "bodywash" | "incense" | "bodyspray" | "humidifier";
 
@@ -287,6 +288,8 @@ function ScentConceptContent() {
     setInspirationPrompts(getRandomPrompts(4));
   }, []);
   const [, navigate] = useLocation();
+  const { activeWorkspaceId } = useWorkspace();
+  const { data: workspacesList } = trpc.workspace.list.useQuery();
 
   const utils = trpc.useUtils();
 
@@ -356,7 +359,11 @@ function ScentConceptContent() {
     setResult(null);
     setActiveFilter("all");
     setViewingHistoryId(null);
-    scentMutation.mutate({ concept: concept.trim(), selectedTypes: Array.from(selectedTypes) });
+    scentMutation.mutate({
+      concept: concept.trim(),
+      selectedTypes: Array.from(selectedTypes),
+      ...(activeWorkspaceId ? { workspaceId: activeWorkspaceId } : {}),
+    });
   };
 
   const handleLoadHistory = (gen: { id: number; concept: string; selectedTypes: unknown; content: string; createdAt: Date }) => {
@@ -543,6 +550,11 @@ function ScentConceptContent() {
               </CardTitle>
               <CardDescription className="text-muted-foreground">
                 Be descriptive — include sensory details, emotions, settings, or scent references.
+                {activeWorkspaceId && workspacesList && (
+                  <span className="block mt-1 text-primary text-xs">
+                    Using workspace: {workspacesList.find(w => w.id === activeWorkspaceId)?.name}
+                  </span>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

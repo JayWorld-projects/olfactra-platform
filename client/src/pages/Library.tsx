@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useNavItems } from "./Home";
 import { trpc } from "@/lib/trpc";
 import { LONGEVITY_LABELS } from "@shared/perfumery";
-import { BookOpen, Plus, Search, X, Star, Package, Check, Undo2 } from "lucide-react";
+import { BookOpen, Plus, Search, X, Star, Package, Check, Undo2, Layers } from "lucide-react";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useState, useMemo, useCallback } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -37,10 +38,24 @@ function LibraryContent() {
   const [batchEdits, setBatchEdits] = useState<Record<number, string>>({});
   const [showFavorites, setShowFavorites] = useState(false);
 
+  const { activeWorkspaceId, setActiveWorkspaceId } = useWorkspace();
   const { data: ingredientsList, isLoading } = trpc.ingredient.list.useQuery({});
   const { data: categories } = trpc.ingredient.categories.useQuery();
   const { data: favoriteIds } = trpc.ingredient.favorites.useQuery();
+  const { data: workspaceIngredientIds } = trpc.workspace.get.useQuery(
+    { id: activeWorkspaceId! },
+    { enabled: !!activeWorkspaceId }
+  );
+  const { data: workspacesList } = trpc.workspace.list.useQuery();
   const utils = trpc.useUtils();
+
+  // Filter ingredients by active workspace
+  const workspaceFilteredIngredients = useMemo(() => {
+    if (!ingredientsList) return [];
+    if (!activeWorkspaceId || !workspaceIngredientIds) return ingredientsList;
+    const wsIds = new Set(workspaceIngredientIds.ingredientIds);
+    return ingredientsList.filter(i => wsIds.has(i.id));
+  }, [ingredientsList, activeWorkspaceId, workspaceIngredientIds]);
 
   const createMutation = trpc.ingredient.create.useMutation({
     onSuccess: () => {
@@ -81,19 +96,19 @@ function LibraryContent() {
   }, [favSet, addFavMutation, removeFavMutation]);
 
   const filtered = useMemo(() => {
-    if (!ingredientsList) return [];
-    return ingredientsList.filter(i => {
+    if (!workspaceFilteredIngredients) return [];
+    return workspaceFilteredIngredients.filter(i => {
       const matchSearch = !search || i.name.toLowerCase().includes(search.toLowerCase());
       const matchCategory = categoryFilter === "all" || i.category === categoryFilter;
       const matchFav = !showFavorites || favSet.has(i.id);
       return matchSearch && matchCategory && matchFav;
     });
-  }, [ingredientsList, search, categoryFilter, showFavorites, favSet]);
+  }, [workspaceFilteredIngredients, search, categoryFilter, showFavorites, favSet]);
 
   const favoriteIngredients = useMemo(() => {
-    if (!ingredientsList || !favoriteIds) return [];
-    return ingredientsList.filter(i => favSet.has(i.id));
-  }, [ingredientsList, favoriteIds, favSet]);
+    if (!workspaceFilteredIngredients || !favoriteIds) return [];
+    return workspaceFilteredIngredients.filter(i => favSet.has(i.id));
+  }, [workspaceFilteredIngredients, favoriteIds, favSet]);
 
   const handleBatchSave = () => {
     const updates = Object.entries(batchEdits).map(([id, inventoryAmount]) => ({
@@ -128,7 +143,12 @@ function LibraryContent() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-serif font-bold text-foreground">Raw Materials Library</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">{filtered.length} of {ingredientsList?.length ?? 0} ingredients</p>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {filtered.length} of {workspaceFilteredIngredients.length} ingredients
+            {activeWorkspaceId && workspacesList ? (
+              <span className="text-primary"> in {workspacesList.find(w => w.id === activeWorkspaceId)?.name}</span>
+            ) : null}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {batchMode ? (
@@ -189,6 +209,25 @@ function LibraryContent() {
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Workspace indicator */}
+      {activeWorkspaceId && workspacesList && (
+        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-primary/10 border border-primary/20">
+          <Layers className="size-4 text-primary shrink-0" />
+          <span className="text-sm text-foreground">
+            Workspace: <strong>{workspacesList.find(w => w.id === activeWorkspaceId)?.name}</strong>
+            <span className="text-muted-foreground ml-1">({workspaceFilteredIngredients.length} ingredients)</span>
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setActiveWorkspaceId(null)}
+            className="ml-auto text-xs text-muted-foreground hover:text-foreground h-7"
+          >
+            <X className="size-3.5 mr-1" /> Show All
+          </Button>
         </div>
       )}
 
