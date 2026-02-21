@@ -29,6 +29,13 @@
       "when": 1771650398299,
       "tag": "0004_dashing_silver_samurai",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1771651872836,
+      "tag": "0005_nervous_valeria_richards",
+      "breakpoints": true
     }
   ]
 }

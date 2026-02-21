@@ -1401,6 +1401,76 @@ Return JSON:
         return { formulaId };
       }),
   }),
+
+  workspace: router({
+    list: protectedProcedure.query(({ ctx }) => listWorkspacesWithCounts(ctx.user.id)),
+
+    get: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const ws = await getWorkspace(input.id, ctx.user.id);
+        if (!ws) return null;
+        const ingredientIds = await getWorkspaceIngredientIds(ws.id);
+        return { ...ws, ingredientIds };
+      }),
+
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        description: z.string().optional(),
+        ingredientIds: z.array(z.number()),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await createWorkspace({ name: input.name, description: input.description, userId: ctx.user.id });
+        if (input.ingredientIds.length > 0) {
+          await setWorkspaceIngredients(id, input.ingredientIds);
+        }
+        return { id };
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().min(1).optional(),
+        description: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { id, ...data } = input;
+        await updateWorkspace(id, ctx.user.id, data);
+        return { success: true };
+      }),
+
+    setIngredients: protectedProcedure
+      .input(z.object({
+        workspaceId: z.number(),
+        ingredientIds: z.array(z.number()),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Verify workspace belongs to user
+        const ws = await getWorkspace(input.workspaceId, ctx.user.id);
+        if (!ws) throw new Error("Workspace not found");
+        await setWorkspaceIngredients(input.workspaceId, input.ingredientIds);
+        return { success: true, count: input.ingredientIds.length };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteWorkspace(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    ingredients: protectedProcedure
+      .input(z.object({ workspaceId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const ws = await getWorkspace(input.workspaceId, ctx.user.id);
+        if (!ws) return [];
+        const ingredientIds = await getWorkspaceIngredientIds(ws.id);
+        if (ingredientIds.length === 0) return [];
+        const allIngredients = await listIngredients(ctx.user.id);
+        return allIngredients.filter(i => ingredientIds.includes(i.id));
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

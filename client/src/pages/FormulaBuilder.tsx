@@ -104,6 +104,7 @@ function BuilderContent() {
 
   const { activeWorkspaceId } = useWorkspace();
 
+  const { activeWorkspaceId } = useWorkspace();
   const { data: formula, isLoading } = trpc.formula.get.useQuery({ id: formulaId });
   const { data: allIngredients } = trpc.ingredient.list.useQuery({});
   const { data: workspaceData } = trpc.workspace.get.useQuery(
