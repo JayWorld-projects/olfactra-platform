@@ -668,6 +668,37 @@ IMPORTANT:
         return { formulaId, addedCount };
       }),
 
+    clone: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().min(1),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const newId = await cloneFormula(input.id, ctx.user.id, input.name);
+        return { id: newId };
+      }),
+
+    compare: protectedProcedure
+      .input(z.object({
+        formulaIdA: z.number(),
+        formulaIdB: z.number(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const [formulaA, formulaB] = await Promise.all([
+          getFormula(input.formulaIdA, ctx.user.id),
+          getFormula(input.formulaIdB, ctx.user.id),
+        ]);
+        if (!formulaA || !formulaB) return null;
+        const [ingredientsA, ingredientsB] = await Promise.all([
+          getFormulaIngredients(formulaA.id),
+          getFormulaIngredients(formulaB.id),
+        ]);
+        return {
+          formulaA: { ...formulaA, ingredients: ingredientsA },
+          formulaB: { ...formulaB, ingredients: ingredientsB },
+        };
+      }),
+
     saveFromConcept: protectedProcedure
       .input(z.object({
         name: z.string().min(1),
