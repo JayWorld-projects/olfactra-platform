@@ -24,7 +24,7 @@ export default function ScentConcept() {
   if (loading) return <DashboardLayoutSkeleton />;
 
   return (
-    <DashboardLayout navItems={navItems} currentPath="/concept" title="JayLabs Perfumery Studio">
+    <DashboardLayout navItems={navItems} currentPath="/concept" title="JayLabs Perfumery">
       <ScentConceptContent />
     </DashboardLayout>
   );
@@ -35,19 +35,12 @@ function ScentConceptContent() {
   const [result, setResult] = useState<string | null>(null);
 
   const scentMutation = trpc.formula.scentConcept.useMutation({
-    onSuccess: (data) => {
-      setResult(data.content as string);
-    },
-    onError: () => {
-      toast.error("Failed to generate suggestions. Please try again.");
-    },
+    onSuccess: (data) => setResult(data.content as string),
+    onError: () => toast.error("Failed to generate suggestions. Please try again."),
   });
 
   const handleGenerate = () => {
-    if (!concept.trim()) {
-      toast.error("Please describe a scent concept first.");
-      return;
-    }
+    if (!concept.trim()) { toast.error("Please describe a scent concept first."); return; }
     setResult(null);
     scentMutation.mutate({ concept: concept.trim() });
   };
@@ -55,20 +48,20 @@ function ScentConceptContent() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-serif font-bold">Scent Lab</h2>
-        <p className="text-muted-foreground mt-1">
+        <h2 className="text-2xl font-serif font-bold text-foreground">Scent Lab</h2>
+        <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
           Describe a memory, place, or feeling and get formula suggestions drawn from your ingredient library.
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Sparkles className="size-4 text-primary" /> Describe Your Scent Concept
+        <div className="lg:col-span-2 space-y-5">
+          <Card className="bg-card border-border/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Sparkles className="size-4 text-accent" /> Describe Your Scent Concept
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-muted-foreground">
                 Be as descriptive as possible. Include sensory details, emotions, settings, or specific scent references.
               </CardDescription>
             </CardHeader>
@@ -78,12 +71,12 @@ function ScentConceptContent() {
                 value={concept}
                 onChange={e => setConcept(e.target.value)}
                 rows={5}
-                className="resize-none"
+                className="resize-none bg-background border-border/50 focus:border-primary"
               />
               <Button
                 onClick={handleGenerate}
                 disabled={scentMutation.isPending || !concept.trim()}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 {scentMutation.isPending ? (
                   <><Loader2 className="size-4 animate-spin" /> Generating Suggestions...</>
@@ -95,12 +88,12 @@ function ScentConceptContent() {
           </Card>
 
           {result && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">AI Formula Suggestions</CardTitle>
+            <Card className="bg-card border-border/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-semibold">AI Formula Suggestions</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="prose prose-sm max-w-none">
+                <div className="prose prose-sm prose-invert max-w-none">
                   <Streamdown>{result}</Streamdown>
                 </div>
               </CardContent>
@@ -109,17 +102,17 @@ function ScentConceptContent() {
         </div>
 
         <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Lightbulb className="size-4" /> Inspiration
+          <Card className="bg-card border-border/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Lightbulb className="size-4 text-accent" /> Inspiration
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2">
               {EXAMPLE_CONCEPTS.map((ex, i) => (
                 <button
                   key={i}
-                  className="w-full text-left p-3 rounded-lg border hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground"
+                  className="w-full text-left p-3 rounded-lg border border-border/30 hover:border-primary/40 hover:bg-secondary/50 transition-all text-sm text-muted-foreground hover:text-foreground leading-relaxed"
                   onClick={() => setConcept(ex)}
                 >
                   "{ex.slice(0, 80)}..."

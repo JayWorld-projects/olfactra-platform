@@ -1,9 +1,9 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { Beaker, BookOpen, FlaskConical, Import, Sparkles, LogIn, Droplets } from "lucide-react";
+import { Beaker, BookOpen, FlaskConical, Import, Sparkles, LogIn, Droplets, ArrowRight } from "lucide-react";
 import { useLocation } from "wouter";
 import DashboardLayout from "@/components/DashboardLayout";
 import { DashboardLayoutSkeleton } from "@/components/DashboardLayoutSkeleton";
@@ -31,15 +31,19 @@ export default function Home() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
         <div className="max-w-lg text-center space-y-6">
           <div className="flex justify-center">
-            <div className="size-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <div className="size-16 rounded-2xl bg-primary/15 flex items-center justify-center ring-1 ring-primary/20">
               <Droplets className="size-8 text-primary" />
             </div>
           </div>
-          <h1 className="text-3xl font-serif font-bold text-foreground">JayLabs Perfumery Studio</h1>
-          <p className="text-muted-foreground text-lg">
+          <h1 className="text-3xl font-serif font-bold text-foreground">JayLabs Perfumery</h1>
+          <p className="text-muted-foreground text-base leading-relaxed">
             Your personal perfumery workbench. Manage raw materials, build formulas, and explore scent concepts with AI assistance.
           </p>
-          <Button size="lg" onClick={() => { window.location.href = getLoginUrl(); }}>
+          <Button
+            size="lg"
+            onClick={() => { window.location.href = getLoginUrl(); }}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
+          >
             <LogIn className="size-4" />
             Sign In to Get Started
           </Button>
@@ -52,7 +56,7 @@ export default function Home() {
     <DashboardLayout
       navItems={NAV_ITEMS}
       currentPath="/"
-      title="JayLabs Perfumery Studio"
+      title="JayLabs Perfumery"
       subtitle="Dashboard"
     >
       <DashboardContent />
@@ -84,47 +88,81 @@ function DashboardContent() {
 
   const topCategories = Object.entries(categoryDist).sort((a, b) => b[1] - a[1]).slice(0, 8);
 
+  const statCards = [
+    { label: "Raw Materials", value: totalIngredients, sub: "ingredients in your library", href: "/library", icon: <BookOpen className="size-5" /> },
+    { label: "Formulas", value: totalFormulas, sub: "formulas created", href: "/formulas", icon: <FlaskConical className="size-5" /> },
+    { label: "Categories", value: totalCategories, sub: "scent families", href: "/library", icon: <Beaker className="size-5" /> },
+  ];
+
+  const quickActions = [
+    { label: "Import Materials", sub: "Upload CSV/TSV ingredient lists", href: "/import", icon: <Import className="size-5 text-primary" /> },
+    { label: "Create Formula", sub: "Build a new fragrance formula", href: "/formulas", icon: <FlaskConical className="size-5 text-accent" /> },
+    { label: "Scent Lab", sub: "Describe a concept, get formula suggestions", href: "/concept", icon: <Sparkles className="size-5 text-accent" /> },
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-5xl">
+      {/* Header */}
       <div>
         <h2 className="text-2xl font-serif font-bold text-foreground">Welcome back</h2>
-        <p className="text-muted-foreground mt-1">Here is an overview of your perfumery workspace.</p>
+        <p className="text-muted-foreground mt-1 text-sm">Here is an overview of your perfumery workspace.</p>
       </div>
 
+      {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/library")}>
-          <CardHeader className="pb-2">
-            <CardDescription>Raw Materials</CardDescription>
-            <CardTitle className="text-3xl">{totalIngredients}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">ingredients in your library</p>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/formulas")}>
-          <CardHeader className="pb-2">
-            <CardDescription>Formulas</CardDescription>
-            <CardTitle className="text-3xl">{totalFormulas}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">formulas created</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Categories</CardDescription>
-            <CardTitle className="text-3xl">{totalCategories}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">scent families in library</p>
-          </CardContent>
-        </Card>
+        {statCards.map(card => (
+          <Card
+            key={card.label}
+            className="cursor-pointer group hover:border-primary/40 transition-all bg-card border-border/50"
+            onClick={() => setLocation(card.href)}
+          >
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">{card.label}</p>
+                  <p className="text-3xl font-bold text-foreground mt-1">{card.value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{card.sub}</p>
+                </div>
+                <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary/20 transition-colors">
+                  {card.icon}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
+      {/* Quick Actions + Top Categories */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Top Categories</CardTitle>
+        {/* Quick Actions */}
+        <Card className="bg-card border-border/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold">Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {quickActions.map(action => (
+              <button
+                key={action.label}
+                onClick={() => setLocation(action.href)}
+                className="flex items-center gap-4 w-full rounded-xl p-3 hover:bg-secondary/70 transition-colors text-left group"
+              >
+                <div className="size-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                  {action.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">{action.label}</p>
+                  <p className="text-xs text-muted-foreground">{action.sub}</p>
+                </div>
+                <ArrowRight className="size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+              </button>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Top Categories */}
+        <Card className="bg-card border-border/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold">Top Categories</CardTitle>
           </CardHeader>
           <CardContent>
             {topCategories.length === 0 ? (
@@ -133,71 +171,43 @@ function DashboardContent() {
               <div className="space-y-3">
                 {topCategories.map(([cat, count]) => (
                   <div key={cat} className="flex items-center gap-3">
-                    <span className="text-sm font-medium w-32 truncate">{cat}</span>
-                    <div className="flex-1 bg-muted rounded-full h-2.5 overflow-hidden">
+                    <span className="text-sm font-medium w-28 truncate text-foreground">{cat}</span>
+                    <div className="flex-1 bg-secondary rounded-full h-2 overflow-hidden">
                       <div
                         className="bg-primary h-full rounded-full transition-all"
                         style={{ width: `${(count / totalIngredients) * 100}%` }}
                       />
                     </div>
-                    <span className="text-sm text-muted-foreground w-8 text-right">{count}</span>
+                    <span className="text-sm text-muted-foreground w-8 text-right tabular-nums">{count}</span>
                   </div>
                 ))}
               </div>
             )}
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-3">
-            <Button variant="outline" className="justify-start h-auto py-3" onClick={() => setLocation("/import")}>
-              <Import className="size-4 mr-3 text-primary" />
-              <div className="text-left">
-                <div className="font-medium">Import Materials</div>
-                <div className="text-xs text-muted-foreground">Upload CSV/TSV ingredient lists</div>
-              </div>
-            </Button>
-            <Button variant="outline" className="justify-start h-auto py-3" onClick={() => setLocation("/formulas")}>
-              <FlaskConical className="size-4 mr-3 text-primary" />
-              <div className="text-left">
-                <div className="font-medium">Create Formula</div>
-                <div className="text-xs text-muted-foreground">Build a new fragrance formula</div>
-              </div>
-            </Button>
-            <Button variant="outline" className="justify-start h-auto py-3" onClick={() => setLocation("/concept")}>
-              <Sparkles className="size-4 mr-3 text-primary" />
-              <div className="text-left">
-                <div className="font-medium">Scent Lab</div>
-                <div className="text-xs text-muted-foreground">Describe a concept, get formula suggestions</div>
-              </div>
-            </Button>
-          </CardContent>
-        </Card>
       </div>
 
+      {/* Longevity Distribution */}
       {totalIngredients > 0 && Object.keys(longevityDist).length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Longevity Distribution</CardTitle>
-            <CardDescription>Substantivity levels across your library (0 = most volatile, 5 = base note)</CardDescription>
+        <Card className="bg-card border-border/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold">Longevity Distribution</CardTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">Substantivity levels across your library (0 = most volatile, 5 = base note)</p>
           </CardHeader>
           <CardContent>
-            <div className="flex items-end gap-2 h-32">
+            <div className="flex items-end gap-3 h-36">
               {[0, 1, 2, 3, 4, 5].map(level => {
                 const count = longevityDist[level] || 0;
                 const maxCount = Math.max(...Object.values(longevityDist), 1);
                 const height = (count / maxCount) * 100;
                 const labels = ["Volatile", "Top", "Top-Heart", "Heart", "Heart-Base", "Base"];
                 return (
-                  <div key={level} className="flex-1 flex flex-col items-center gap-1">
-                    <span className="text-xs font-medium text-muted-foreground">{count}</span>
-                    <div className="w-full bg-muted rounded-t" style={{ height: `${Math.max(height, 4)}%` }}>
-                      <div className="w-full h-full bg-primary/70 rounded-t" />
+                  <div key={level} className="flex-1 flex flex-col items-center gap-1.5">
+                    <span className="text-xs font-medium text-muted-foreground tabular-nums">{count}</span>
+                    <div className="w-full rounded-t-md overflow-hidden" style={{ height: `${Math.max(height, 6)}%` }}>
+                      <div className="w-full h-full bg-gradient-to-t from-primary/80 to-primary/40 rounded-t-md" />
                     </div>
-                    <span className="text-[10px] text-muted-foreground text-center leading-tight">{labels[level]}</span>
+                    <span className="text-[11px] text-muted-foreground text-center leading-tight">{labels[level]}</span>
                   </div>
                 );
               })}

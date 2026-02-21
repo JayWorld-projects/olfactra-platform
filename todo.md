@@ -23,3 +23,8 @@
 - [x] Vitest unit tests for server-side procedures
 - [x] Fix: User unable to log into the site
 - [x] Fix: Login loop persists after first OAuth fix - cookie not being retained by browser (added localStorage token fallback)
+- [x] Redesign: Jacksonville Jaguars color palette (teal #006778, gold #D7A22A, black #101820)
+- [x] Redesign: Modernize UI with cleaner layout, better spacing, and visual hierarchy
+- [x] Redesign: Simplify navigation for easy understanding
+- [x] Redesign: Update all pages (Dashboard, Library, Formulas, Scent Lab, Import, Ingredient Detail)
+- [x] Redesign: Dark theme with teal/gold accents

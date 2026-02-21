@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Progress } from "@/components/ui/progress";
 import { useNavItems } from "./Home";
 import { trpc } from "@/lib/trpc";
 import { Upload, FileText, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
@@ -31,7 +30,6 @@ function parseTSV(text: string): ParsedRow[] {
   for (let i = 1; i < lines.length; i++) {
     const cols = lines[i].split("\t");
     if (cols.length < 1 || !cols[0]?.trim()) continue;
-    // Columns beyond 8 are extended description data - join them
     const extraDesc = cols.slice(8).filter(c => c.trim()).join(" ").trim();
     const mainDesc = (cols[8] || "").trim();
     const fullDesc = [mainDesc, extraDesc].filter(Boolean).join(" ");
@@ -58,29 +56,18 @@ function parseCSV(text: string): ParsedRow[] {
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (inQuotes) {
-      if (ch === '"' && text[i + 1] === '"') {
-        field += '"';
-        i++;
-      } else if (ch === '"') {
-        inQuotes = false;
-      } else {
-        field += ch;
-      }
+      if (ch === '"' && text[i + 1] === '"') { field += '"'; i++; }
+      else if (ch === '"') { inQuotes = false; }
+      else { field += ch; }
     } else {
-      if (ch === '"') {
-        inQuotes = true;
-      } else if (ch === ",") {
-        current.push(field);
-        field = "";
-      } else if (ch === "\n" || ch === "\r") {
+      if (ch === '"') { inQuotes = true; }
+      else if (ch === ",") { current.push(field); field = ""; }
+      else if (ch === "\n" || ch === "\r") {
         if (ch === "\r" && text[i + 1] === "\n") i++;
-        current.push(field);
-        field = "";
+        current.push(field); field = "";
         if (current.some(c => c.trim())) lines.push(current);
         current = [];
-      } else {
-        field += ch;
-      }
+      } else { field += ch; }
     }
   }
   current.push(field);
@@ -91,10 +78,7 @@ function parseCSV(text: string): ParsedRow[] {
   const rows: ParsedRow[] = [];
 
   const findCol = (names: string[]) => {
-    for (const n of names) {
-      const idx = header.findIndex(h => h.includes(n));
-      if (idx >= 0) return idx;
-    }
+    for (const n of names) { const idx = header.findIndex(h => h.includes(n)); if (idx >= 0) return idx; }
     return -1;
   };
 
@@ -133,7 +117,7 @@ export default function ImportPage() {
   if (loading) return <DashboardLayoutSkeleton />;
 
   return (
-    <DashboardLayout navItems={navItems} currentPath="/import" title="JayLabs Perfumery Studio">
+    <DashboardLayout navItems={navItems} currentPath="/import" title="JayLabs Perfumery">
       <ImportContent />
     </DashboardLayout>
   );
@@ -168,20 +152,14 @@ function ImportContent() {
     if (!file) return;
     setFileName(file.name);
     setImportResult(null);
-
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
       let rows: ParsedRow[];
-      if (file.name.endsWith(".tsv") || file.name.endsWith(".txt")) {
-        rows = parseTSV(text);
-      } else {
-        rows = parseCSV(text);
-      }
+      if (file.name.endsWith(".tsv") || file.name.endsWith(".txt")) { rows = parseTSV(text); }
+      else { rows = parseCSV(text); }
       setParsed(rows);
-      if (rows.length === 0) {
-        toast.error("No valid rows found in the file.");
-      }
+      if (rows.length === 0) toast.error("No valid rows found in the file.");
     };
     reader.readAsText(file);
   };
@@ -189,12 +167,9 @@ function ImportContent() {
   const handleImport = () => {
     if (parsed.length === 0) return;
     setImporting(true);
-    // Import in batches of 50
     const batchSize = 50;
     const batches: ParsedRow[][] = [];
-    for (let i = 0; i < parsed.length; i += batchSize) {
-      batches.push(parsed.slice(i, i + batchSize));
-    }
+    for (let i = 0; i < parsed.length; i += batchSize) batches.push(parsed.slice(i, i + batchSize));
 
     let imported = 0;
     const importBatch = async (idx: number) => {
@@ -210,7 +185,7 @@ function ImportContent() {
         const result = await bulkImportMutation.mutateAsync({ ingredients: batches[idx] });
         imported += result.count;
         await importBatch(idx + 1);
-      } catch (err) {
+      } catch {
         setImportResult({ success: false, count: imported });
         toast.error(`Import partially failed at batch ${idx + 1}`);
         setImporting(false);
@@ -222,54 +197,50 @@ function ImportContent() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-serif font-bold">Import Materials</h2>
-        <p className="text-muted-foreground mt-1">
+        <h2 className="text-2xl font-serif font-bold text-foreground">Import Materials</h2>
+        <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
           Upload your ingredient library from a CSV or TSV file. The system will parse and preview the data before importing.
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Upload File</CardTitle>
-          <CardDescription>
+      <Card className="bg-card border-border/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">Upload File</CardTitle>
+          <CardDescription className="text-muted-foreground">
             Supported formats: CSV, TSV. Expected columns: Name, CAS/Botanical, Supplier, Category, Inventory Amount, Cost per Gram, IFRA Limit, Longevity, Description.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".csv,.tsv,.txt"
-            onChange={handleFile}
-            className="hidden"
-          />
+          <input ref={fileRef} type="file" accept=".csv,.tsv,.txt" onChange={handleFile} className="hidden" />
           <div
-            className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+            className="border-2 border-dashed border-border/50 rounded-xl p-10 text-center cursor-pointer hover:border-primary/50 transition-all hover:bg-secondary/30"
             onClick={() => fileRef.current?.click()}
           >
-            <Upload className="size-8 mx-auto text-muted-foreground mb-3" />
-            <p className="text-sm font-medium">Click to upload or drag and drop</p>
+            <div className="size-12 rounded-xl bg-secondary flex items-center justify-center mx-auto mb-3">
+              <Upload className="size-6 text-muted-foreground" />
+            </div>
+            <p className="text-sm font-medium text-foreground">Click to upload or drag and drop</p>
             <p className="text-xs text-muted-foreground mt-1">CSV, TSV, or TXT files</p>
           </div>
 
           {fileName && (
             <div className="flex items-center gap-2 text-sm">
               <FileText className="size-4 text-primary" />
-              <span className="font-medium">{fileName}</span>
-              <Badge variant="secondary">{parsed.length} rows parsed</Badge>
+              <span className="font-medium text-foreground">{fileName}</span>
+              <Badge variant="secondary" className="bg-secondary text-secondary-foreground">{parsed.length} rows parsed</Badge>
             </div>
           )}
         </CardContent>
       </Card>
 
       {parsed.length > 0 && (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card className="bg-card border-border/50">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
             <div>
-              <CardTitle className="text-base">Preview ({parsed.length} ingredients)</CardTitle>
-              <CardDescription>Review the parsed data before importing.</CardDescription>
+              <CardTitle className="text-base font-semibold">Preview ({parsed.length} ingredients)</CardTitle>
+              <CardDescription className="text-muted-foreground">Review the parsed data before importing.</CardDescription>
             </div>
-            <Button onClick={handleImport} disabled={importing}>
+            <Button onClick={handleImport} disabled={importing} className="bg-primary hover:bg-primary/90 text-primary-foreground">
               {importing ? (
                 <><Loader2 className="size-4 animate-spin" /> Importing...</>
               ) : (
@@ -281,36 +252,30 @@ function ImportContent() {
             <div className="overflow-x-auto max-h-96">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="sticky top-0 bg-card">#</TableHead>
-                    <TableHead className="sticky top-0 bg-card">Name</TableHead>
-                    <TableHead className="sticky top-0 bg-card">CAS</TableHead>
-                    <TableHead className="sticky top-0 bg-card">Supplier</TableHead>
-                    <TableHead className="sticky top-0 bg-card">Category</TableHead>
-                    <TableHead className="sticky top-0 bg-card">Stock</TableHead>
-                    <TableHead className="sticky top-0 bg-card">$/g</TableHead>
-                    <TableHead className="sticky top-0 bg-card">IFRA</TableHead>
-                    <TableHead className="sticky top-0 bg-card">Long.</TableHead>
+                  <TableRow className="border-border/50">
+                    {["#", "Name", "CAS", "Supplier", "Category", "Stock", "$/g", "IFRA", "Long."].map(h => (
+                      <TableHead key={h} className="sticky top-0 bg-card text-muted-foreground z-10">{h}</TableHead>
+                    ))}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {parsed.slice(0, 50).map((row, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
-                      <TableCell className="font-medium text-sm max-w-[200px] truncate">{row.name}</TableCell>
-                      <TableCell className="text-xs max-w-[150px] truncate">{row.casNumber || "—"}</TableCell>
+                    <TableRow key={i} className="border-border/30">
+                      <TableCell className="text-xs text-muted-foreground tabular-nums">{i + 1}</TableCell>
+                      <TableCell className="font-medium text-sm max-w-[200px] truncate text-foreground">{row.name}</TableCell>
+                      <TableCell className="text-xs max-w-[150px] truncate font-mono">{row.casNumber || "—"}</TableCell>
                       <TableCell className="text-xs">{row.supplier || "—"}</TableCell>
                       <TableCell className="text-xs">{row.category || "—"}</TableCell>
                       <TableCell className="text-xs">{row.inventoryAmount || "—"}</TableCell>
-                      <TableCell className="text-xs">{row.costPerGram || "—"}</TableCell>
+                      <TableCell className="text-xs text-accent">{row.costPerGram || "—"}</TableCell>
                       <TableCell className="text-xs">{row.ifraLimit || "—"}</TableCell>
-                      <TableCell className="text-xs">{row.longevity}</TableCell>
+                      <TableCell className="text-xs tabular-nums">{row.longevity}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
               {parsed.length > 50 && (
-                <p className="text-xs text-muted-foreground text-center py-2">
+                <p className="text-xs text-muted-foreground text-center py-3">
                   Showing first 50 of {parsed.length} rows
                 </p>
               )}
@@ -320,12 +285,12 @@ function ImportContent() {
       )}
 
       {importResult && (
-        <Card className={importResult.success ? "border-green-300" : "border-red-300"}>
-          <CardContent className="pt-4 flex items-center gap-3">
+        <Card className={`border-border/50 ${importResult.success ? "bg-emerald-500/10 border-emerald-500/30" : "bg-destructive/10 border-destructive/30"}`}>
+          <CardContent className="pt-4 pb-4 flex items-center gap-3">
             {importResult.success ? (
-              <><CheckCircle className="size-5 text-green-600" /><span className="text-sm font-medium text-green-700">Successfully imported {importResult.count} ingredients into your library.</span></>
+              <><CheckCircle className="size-5 text-emerald-400" /><span className="text-sm font-medium text-emerald-300">Successfully imported {importResult.count} ingredients into your library.</span></>
             ) : (
-              <><AlertCircle className="size-5 text-red-600" /><span className="text-sm font-medium text-red-700">Import failed. Please check your file format and try again.</span></>
+              <><AlertCircle className="size-5 text-destructive" /><span className="text-sm font-medium text-destructive">Import failed. Please check your file format and try again.</span></>
             )}
           </CardContent>
         </Card>
