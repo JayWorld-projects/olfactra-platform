@@ -112,6 +112,27 @@
 - [x] Feature: Auto-snapshot on Normalize to 100% (already wired in previous phase)
 - [x] Feature: Auto-snapshot on Manual Save action (Save button added to formula header)
 - [x] Feature: Auto-snapshot on Scale Formula (added with scale method and value in label)
-- [ ] Feature: Placeholder for auto-snapshot on Import Formula (Upgrade Prompt 2 — will wire when implemented)
+- [x] Feature: Auto-snapshot on Import Formula (Upgrade Prompt 2 — wired in formulaImport.saveImportedFormula)
 - [ ] Feature: Placeholder for auto-snapshot on Generate Product Version (Upgrade Prompt 3 — will wire when implemented)
 - [x] Verify: Snapshot payload confirmed — includes formula id, version number, timestamp, action type label, and full ingredient table (name, category, weight, dilution %, solvent, total weight)
+
+## UPGRADE 2: FORMULA IMPORT, ANALYSIS, MATCHING, AND SUBSTITUTION
+
+- [x] Feature: Formula input via pasted text (freeform AI parsing)
+- [x] Feature: Formula input via CSV upload (structured column mapping)
+- [x] Feature: Formula input via PDF upload (text extraction + AI parsing)
+- [x] Feature: Column mapping preview for ambiguous CSV/PDF structures
+- [x] Feature: Formula parsing and standardization (normalize units, preserve originals)
+- [x] Feature: Parsed preview table before matching begins
+- [x] Feature: Ingredient matching against library (exact name, synonym, CAS, fuzzy)
+- [x] Feature: Match status display (exact match, close match, no match)
+- [x] Feature: AI-powered substitute suggestions for unmatched ingredients (3-5 candidates)
+- [x] Feature: Substitute confidence levels (high, medium, low) with explanations
+- [x] Feature: Match Report UI with sections (matched, unmatched, substitutions)
+- [x] Feature: User actions on match report (accept substitute, choose different, leave unresolved, manual map)
+- [x] Feature: Save analyzed formula with original data, resolved mappings, and metadata
+- [x] Feature: Store sourceType, importedAt, originalData on formulas table
+- [x] Feature: Store originalName, matchType, matchConfidence, substitutionReason on formula_ingredients table
+- [x] Feature: Mark imported formulas as "Imported and Analyzed"
+- [x] Feature: Multi-step import wizard UI on /import page (Input → Preview → Match Report → Save)
+- [x] Tests: Server-side tests for parsing, matching, and substitution procedures (12 tests, all passing)

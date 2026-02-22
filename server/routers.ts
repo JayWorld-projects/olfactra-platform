@@ -19,6 +19,7 @@ import {
   createFormulaVersion, listFormulaVersions, getFormulaVersion, revertFormulaToVersion, deleteFormulaVersion,
 } from "./db";
 import { invokeLLM } from "./_core/llm";
+import { formulaImportRouter } from "./formulaImport";
 
 export const appRouter = router({
   system: systemRouter,
@@ -769,6 +770,8 @@ Return ONLY the JSON object, no markdown fencing.`;
       .input(z.object({ id: z.number() }))
       .mutation(({ input }) => deleteFormulaVersion(input.id)),
   }),
+
+  formulaImport: formulaImportRouter,
 
   substitution: router({
     suggest: protectedProcedure

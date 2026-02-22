@@ -44,6 +44,9 @@ export const formulas = mysqlTable("formulas", {
   totalWeight: decimal("totalWeight", { precision: 12, scale: 3 }).default("0"),
   status: mysqlEnum("status", ["draft", "final"]).default("draft").notNull(),
   aiNotesLastGeneratedAt: timestamp("aiNotesLastGeneratedAt"),
+  sourceType: varchar("sourceType", { length: 20 }),
+  importedAt: timestamp("importedAt"),
+  originalData: text("originalData"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -58,6 +61,10 @@ export const formulaIngredients = mysqlTable("formula_ingredients", {
   weight: decimal("weight", { precision: 12, scale: 3 }).notNull(),
   dilutionPercent: decimal("dilutionPercent", { precision: 6, scale: 2 }).default("100"),
   note: varchar("note", { length: 255 }),
+  originalName: varchar("originalName", { length: 255 }),
+  matchType: varchar("matchType", { length: 20 }),
+  matchConfidence: varchar("matchConfidence", { length: 10 }),
+  substitutionReason: text("substitutionReason"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
