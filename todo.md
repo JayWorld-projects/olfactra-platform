@@ -190,3 +190,12 @@
 - [x] Animations: Card hover and entrance transitions
 - [x] Animations: Dialog open/close transitions
 - [x] Verify: All changes compatible with v1.0 manual (no new concepts, labels, or behaviors)
+
+## UI REFINEMENT v1.3: IFRA BANNER & LOADING SKELETON
+
+- [x] IFRA banner: Soften corners and integrate with card aesthetic
+- [x] IFRA banner: Maintain clear amber warning visibility
+- [x] Skeleton: Formula Builder loading skeleton with layout-matched placeholders
+- [x] Skeleton: Calm, non-distracting appearance (no flashy shimmer)
+- [x] Verify: No new wording, behaviors, or controls introduced
+- [x] Verify: All changes compatible with v1.0 manual

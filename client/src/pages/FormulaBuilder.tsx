@@ -1,6 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import { DashboardLayoutSkeleton } from "@/components/DashboardLayoutSkeleton";
+import { FormulaBuilderSkeleton } from "@/components/FormulaBuilderSkeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -485,11 +486,7 @@ ${[0,1,2,3,4,5].map(level => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="size-6 animate-spin text-primary" />
-      </div>
-    );
+    return <FormulaBuilderSkeleton />;
   }
 
   if (!formula) {
@@ -601,19 +598,21 @@ ${[0,1,2,3,4,5].map(level => {
 
       {/* IFRA Warnings */}
       {ifraWarnings.length > 0 && (
-        <Card className="border-amber-500/50 bg-amber-500/10">
-          <CardContent className="pt-4 pb-3">
-            <div className="flex items-center gap-2 text-amber-400 mb-2">
-              <AlertTriangle className="size-4" />
-              <span className="font-medium text-sm">IFRA Limit Warnings</span>
+        <div className="rounded-xl border border-amber-400/30 bg-amber-50/80 dark:bg-amber-950/20 px-4 py-3.5 shadow-sm">
+          <div className="flex items-center gap-2.5 mb-2">
+            <div className="flex items-center justify-center size-6 rounded-lg bg-amber-400/15">
+              <AlertTriangle className="size-3.5 text-amber-600 dark:text-amber-400" />
             </div>
+            <span className="font-medium text-sm text-amber-800 dark:text-amber-300">IFRA Limit Warnings</span>
+          </div>
+          <div className="space-y-1 pl-8.5">
             {ifraWarnings.map((w, i) => (
-              <p key={i} className="text-xs text-amber-300/80">
-                {w.name}: {w.current.toFixed(2)}% (limit: {w.limit}%)
+              <p key={i} className="text-xs text-amber-700/80 dark:text-amber-400/70 leading-relaxed">
+                <span className="font-medium">{w.name}</span>: {w.current.toFixed(2)}% <span className="text-amber-600/60 dark:text-amber-500/50">(limit: {w.limit}%)</span>
               </p>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Stats Row */}
