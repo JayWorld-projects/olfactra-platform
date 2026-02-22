@@ -129,6 +129,7 @@ function BuilderContent() {
     onSuccess: () => { invalidateFormula(); setShowAddIngredient(false); toast.success("Ingredient added"); },
   });
   const updateIngredientMutation = trpc.formula.updateIngredient.useMutation({ onSuccess: invalidateFormula });
+  const updateFormulaIngredientMutation = trpc.formula.updateIngredient.useMutation({ onSuccess: invalidateFormula });
   const removeIngredientMutation = trpc.formula.removeIngredient.useMutation({
     onSuccess: () => { invalidateFormula(); toast.success("Ingredient removed"); },
   });
@@ -171,6 +172,9 @@ function BuilderContent() {
   const [addWeight, setAddWeight] = useState("1.000");
   const [addDilution, setAddDilution] = useState("100");
   const [ingredientSearch, setIngredientSearch] = useState("");
+  const [universalDilutionInput, setUniversalDilutionInput] = useState("");
+  const [showNeatView, setShowNeatView] = useState(false);
+  const [normalizeMode, setNormalizeMode] = useState<"as-dosed" | "neat">("as-dosed");
 
   const filteredAddIngredients = useMemo(() => {
     if (!availableIngredients) return [];
@@ -198,6 +202,27 @@ function BuilderContent() {
     }, 0),
     [formulaIngredients]
   );
+
+  const concentrateWeightNeat = useMemo(() =>
+    formulaIngredients.reduce((sum: number, fi: any) => {
+      const w = parseFloat(fi.weight || "0");
+      const dilutionPct = parseFloat(fi.dilutionPercent || "100");
+      return sum + (w * (dilutionPct / 100));
+    }, 0),
+    [formulaIngredients]
+  );
+
+  const percentagesSum = useMemo(() => {
+    const basis = showNeatView ? concentrateWeightNeat : concentrateWeight;
+    return formulaIngredients.reduce((sum: number, fi: any) => {
+      const w = parseFloat(fi.weight || "0");
+      const dilutionPct = parseFloat(fi.dilutionPercent || "100");
+      const displayWeight = showNeatView ? (w * (dilutionPct / 100)) : w;
+      return sum + (basis > 0 ? (displayWeight / basis) * 100 : 0);
+    }, 0);
+  }, [formulaIngredients, showNeatView, concentrateWeight, concentrateWeightNeat]);
+
+  const percentageWarning = Math.abs(percentagesSum - 100) > 0.5;
 
   const ifraWarnings = useMemo(() => {
     const warnings: { name: string; current: number; limit: number }[] = [];
@@ -603,12 +628,56 @@ ${[0,1,2,3,4,5].map(level => {
         </TabsList>
 
         <TabsContent value="ingredients">
+          {/* Universal Dilution Control */}
+          <Card className="bg-card border-border/50 mb-4">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5 block">Set Universal Dilution %</label>
+                  <input
+                    type="number"
+                    min="0.1"
+                    max="100"
+                    step="0.1"
+                    value={universalDilutionInput}
+                    onChange={(e) => setUniversalDilutionInput(e.target.value)}
+                    placeholder="e.g., 50"
+                    className="h-8 px-2 text-sm border border-border/50 rounded bg-background focus:outline-none focus:ring-1 focus:ring-primary w-24 tabular-nums"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">Apply to all ingredients</p>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const val = parseFloat(universalDilutionInput);
+                    if (isNaN(val) || val <= 0 || val > 100) {
+                      toast.error("Dilution must be between 0 and 100");
+                      return;
+                    }
+                    formulaIngredients.forEach((fi: any) => {
+                      updateFormulaIngredientMutation.mutate({ id: fi.id, dilutionPercent: val.toString() });
+                    });
+                    toast.success(`Applied ${val}% dilution to all ingredients`);
+                  }}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground mt-5"
+                >
+                  Apply
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="bg-card border-border/50">
             <CardHeader className="flex flex-row items-center justify-between py-3">
               <CardTitle className="text-base font-semibold">Formula Ingredients</CardTitle>
-              <Button size="sm" onClick={() => { setShowAddIngredient(true); setIngredientSearch(""); setSelectedIngredientId(""); setAddWeight("1.000"); setAddDilution("100"); }} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                <Plus className="size-3.5" /> Add
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setShowNeatView(!showNeatView)} className="text-xs border-border/50">
+                  {showNeatView ? "Neat/Active" : "As-Dosed"}
+                </Button>
+                <Button size="sm" onClick={() => { setShowAddIngredient(true); setIngredientSearch(""); setSelectedIngredientId(""); setAddWeight("1.000"); setAddDilution("100"); }} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                  <Plus className="size-3.5" /> Add
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               {formulaIngredients.length === 0 ? (
@@ -635,7 +704,10 @@ ${[0,1,2,3,4,5].map(level => {
                     <TableBody>
                       {formulaIngredients.map((fi: any) => {
                         const w = parseFloat(fi.weight || "0");
-                        const pct = totalWeight > 0 ? (w / totalWeight) * 100 : 0;
+                        const dilutionPct = parseFloat(fi.dilutionPercent || "100");
+                        const neatW = w * (dilutionPct / 100);
+                        const basis = showNeatView ? concentrateWeightNeat : concentrateWeight;
+                        const pct = basis > 0 ? ((showNeatView ? neatW : w) / basis) * 100 : 0;
                         const cost = w * parseFloat(fi.ingredient?.costPerGram || "0");
                         return (
                           <TableRow key={fi.id} className="border-border/30">
@@ -688,6 +760,30 @@ ${[0,1,2,3,4,5].map(level => {
                 </div>
               )}
             </CardContent>
+            {formulaIngredients.length > 0 && (
+              <CardContent className="pt-3 pb-3 border-t border-border/30 space-y-2">
+                {percentageWarning && (
+                  <div className="flex items-center gap-2 text-amber-600 text-xs">
+                    <AlertTriangle className="size-3.5" />
+                    <span>Percentages sum to {percentagesSum.toFixed(1)}% (expected 100%)</span>
+                  </div>
+                )}
+                <Button variant="outline" size="sm" onClick={() => {
+                  const basis = normalizeMode === "as-dosed" ? concentrateWeight : concentrateWeightNeat;
+                  formulaIngredients.forEach((fi: any) => {
+                    const w = parseFloat(fi.weight || "0");
+                    const dilutionPct = parseFloat(fi.dilutionPercent || "100");
+                    const activeWeight = w * (dilutionPct / 100);
+                    const normalizeBy = normalizeMode === "as-dosed" ? w : activeWeight;
+                    const newWeight = basis > 0 ? (normalizeBy / basis) * 100 : 0;
+                    updateFormulaIngredientMutation.mutate({ id: fi.id, weight: newWeight.toFixed(3) });
+                  });
+                  toast.success(`Normalized to 100% (${normalizeMode})`);
+                }} className="text-xs border-border/50">
+                  Normalize to 100% ({normalizeMode})
+                </Button>
+              </CardContent>
+            )}
           </Card>
         </TabsContent>
 

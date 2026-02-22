@@ -79,3 +79,17 @@
 - [x] Rebrand: Upload new Olfactra logo to S3 CDN
 - [x] Rebrand: Update all page references, sidebar, headers, and meta titles to Olfactra
 - [x] Rebrand: Verify text visibility and contrast on light background across all pages (Dashboard, Library, Formulas, Scent Lab, Workspaces)
+
+## UPGRADE 1: ENHANCE EXISTING NOTES, BULK DILUTION, AND LIVE TOTALS
+
+- [x] Feature: AI-generated notes append-only block with structured content (server procedure added)
+- [ ] Feature: Copy AI Notes to Manual Notes button to create editable version (UI pending)
+- [ ] Feature: Lock AI Generated Notes block from direct editing (UI pending)
+- [ ] Feature: Regenerate AI notes block when formula is re-saved after AI changes (UI pending)
+- [x] Feature: Bulk Set Universal Dilution % control with Apply button (implemented and tested)
+- [x] Feature: Per-ingredient dilution override after universal dilution applied (editable cells remain independent)
+- [x] Feature: Real-time recalculation of totals and percentages on weight/dilution changes (useMemo calculations)
+- [x] Feature: Display both as-dosed and neat/active weight calculations (concentrateWeightNeat computed)
+- [x] Feature: Toggle between As-dosed and Neat/active percentage views (default As-dosed) (tested)
+- [x] Feature: Normalize to 100% button with option to choose normalization basis (as-dosed default)
+- [x] Feature: Warning when percentages do not equal 100% (amber warning with sum display)

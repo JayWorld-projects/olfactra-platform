@@ -592,6 +592,77 @@ IMPORTANT:
         }
         return { formulaId, addedCount, totalRequested: input.ingredients.length };
       }),
+
+    generateAINotes: protectedProcedure
+      .input(z.object({ formulaId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const formula = await getFormula(input.formulaId, ctx.user.id);
+        if (!formula) throw new Error("Formula not found");
+        const ingredients = await getFormulaIngredients(formula.id);
+        const allIngredients = await listIngredients(ctx.user.id);
+
+        const ingredientDetails = ingredients.map((fi: any) => {
+          const ing = allIngredients.find(i => i.id === fi.ingredientId);
+          return `- ${ing?.name || "Unknown"} (${fi.weight}g, dilution: ${fi.dilutionPercent}%, IFRA: ${ing?.ifraLimit || "N/A"}%)`;
+        }).join("\n");
+
+        const prompt = `You are a master perfumer. Generate structured guidance notes for this formula:
+
+Formula: ${formula.name}
+Solvent: ${formula.solvent}
+Solvent Weight: ${formula.solventWeight}g
+
+Ingredients:
+${ingredientDetails}
+
+Generate a JSON object with these exact fields:
+{
+  "solventRecommendations": "Recommend solvents (DPG, ethanol, TEC, IPM, or neat) with brief why",
+  "dilutionGuidance": "Identify ingredients for pre-dilution and suggest ranges",
+  "maturationSuggestion": "Suggested aging window based on formula style",
+  "mixingOrder": "Mixing order (base to heart to top) with special handling notes",
+  "safetyReminder": "Always include: Confirm IFRA limits per material and total fragrance load.",
+  "practicalUseGuidance": "Basic ranges for fine fragrance, body spray, room spray, diffuser oil"
+}
+
+Return ONLY the JSON object, no markdown fencing.`;
+
+        const result = await invokeLLM({
+          messages: [
+            { role: "system", content: "You are a master perfumer. Return ONLY valid JSON with no markdown code fences." },
+            { role: "user", content: prompt },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "ai_notes",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  solventRecommendations: { type: "string" },
+                  dilutionGuidance: { type: "string" },
+                  maturationSuggestion: { type: "string" },
+                  mixingOrder: { type: "string" },
+                  safetyReminder: { type: "string" },
+                  practicalUseGuidance: { type: "string" },
+                },
+                required: ["solventRecommendations", "dilutionGuidance", "maturationSuggestion", "mixingOrder", "safetyReminder", "practicalUseGuidance"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const rawContent = result.choices[0]?.message?.content;
+        if (!rawContent || typeof rawContent !== "string") throw new Error("AI notes generation failed");
+
+        const aiNotesData = JSON.parse(rawContent);
+        const timestamp = new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
+        const aiNotesBlock = `## AI Generated Notes\n\n**AI Notes last generated:** ${timestamp}\n\n### A) Solvent Recommendations\n${aiNotesData.solventRecommendations}\n\n### B) Dilution Guidance\n${aiNotesData.dilutionGuidance}\n\n### C) Maturation / Aging Suggestion\n${aiNotesData.maturationSuggestion}\n\n### D) Mixing Order / Handling\n${aiNotesData.mixingOrder}\n\n### E) Safety Reminder\n${aiNotesData.safetyReminder}\n\n### F) Practical Use Guidance\n${aiNotesData.practicalUseGuidance}`;
+
+        return { aiNotesBlock, timestamp };
+      }),
   }),
 
   workspace: router({

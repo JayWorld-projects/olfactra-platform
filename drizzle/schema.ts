@@ -43,6 +43,7 @@ export const formulas = mysqlTable("formulas", {
   solventWeight: decimal("solventWeight", { precision: 12, scale: 3 }).default("0"),
   totalWeight: decimal("totalWeight", { precision: 12, scale: 3 }).default("0"),
   status: mysqlEnum("status", ["draft", "final"]).default("draft").notNull(),
+  aiNotesLastGeneratedAt: timestamp("aiNotesLastGeneratedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
