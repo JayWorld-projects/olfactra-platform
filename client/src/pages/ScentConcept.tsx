@@ -1034,11 +1034,11 @@ function ScentConceptContent() {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold text-muted-foreground">Tips</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-xs text-muted-foreground leading-relaxed">
-              <p>Select only the product types you need for faster, more focused recipes.</p>
-              <p>Click <strong className="text-foreground">Save</strong> on any recipe to add it to your formulas, or <strong className="text-foreground">Save All</strong> for the entire batch.</p>
-              <p>Use the filter tabs to view one product type at a time after generation.</p>
-              <p>All generations are auto-saved to History for later retrieval.</p>
+            <CardContent className="space-y-2.5 text-xs text-muted-foreground leading-relaxed">
+              <p className="pl-3 border-l-2 border-border/40">Select only the product types you need for faster, more focused recipes.</p>
+              <p className="pl-3 border-l-2 border-border/40">Click <strong className="text-foreground">Save</strong> on any recipe to add it to your formulas, or <strong className="text-foreground">Save All</strong> for the entire batch.</p>
+              <p className="pl-3 border-l-2 border-border/40">Use the filter tabs to view one product type at a time after generation.</p>
+              <p className="pl-3 border-l-2 border-border/40">All generations are auto-saved to History for later retrieval.</p>
             </CardContent>
           </Card>
         </div>
