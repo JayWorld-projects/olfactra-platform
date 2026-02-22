@@ -1409,7 +1409,7 @@ function LibraryImportSection() {
             {importResult.success ? (
               <><CheckCircle className="size-5 text-emerald-600" /><span className="text-sm font-medium text-emerald-700">Successfully imported {importResult.count} ingredients into your library.</span></>
             ) : (
-              <><AlertCircle className="size-5 text-destructive" /><span className="text-sm font-medium text-destructive">Import failed. Please check your file format and try again.</span></>
+              <><AlertCircle className="size-5 text-red-600" /><span className="text-sm font-medium text-red-700">Import failed. Please check your file format and try again.</span></>
             )}
           </CardContent>
         </Card>
