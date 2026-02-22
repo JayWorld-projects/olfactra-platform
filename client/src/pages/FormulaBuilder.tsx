@@ -17,7 +17,7 @@ import { LONGEVITY_LABELS, LONGEVITY_COLORS, CATEGORY_COLORS } from "@shared/per
 import {
   ArrowLeft, Plus, Trash2, Scale, Download, Loader2, FlaskConical,
   AlertTriangle, Save, Copy, Tag, StickyNote, X, Check, Pencil, DollarSign, TrendingUp, BarChart3, Info,
-  History, RotateCcw, ArrowRightLeft, Sparkles, ChevronDown, ChevronUp,
+  History, RotateCcw, ArrowRightLeft, Sparkles, ChevronDown, ChevronUp, LockKeyhole, RefreshCw,
 } from "lucide-react";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
@@ -122,7 +122,11 @@ function BuilderContent() {
   const invalidateFormula = () => utils.formula.get.invalidate({ id: formulaId });
 
   const updateFormulaMutation = trpc.formula.update.useMutation({
-    onSuccess: () => { invalidateFormula(); autoSnapshot("Save"); },
+    onSuccess: () => { invalidateFormula(); },
+  });
+  const generateAINotesMutation = trpc.formula.generateAINotes.useMutation({
+    onSuccess: () => { invalidateFormula(); utils.formula.listNotes.invalidate({ formulaId }); toast.success("AI notes generated"); },
+    onError: (err) => { toast.error(`AI notes failed: ${err.message}`); },
   });
   const deleteFormulaMutation = trpc.formula.delete.useMutation({
     onSuccess: () => { toast.success("Formula deleted"); setLocation("/formulas"); },
@@ -670,6 +674,7 @@ ${[0,1,2,3,4,5].map(level => {
                       updateFormulaIngredientMutation.mutate({ id: fi.id, dilutionPercent: val.toString() });
                     });
                     toast.success(`Applied ${val}% dilution to all ingredients`);
+                    autoSnapshot(`Apply Universal Dilution ${val}%`);
                   }}
                   className="bg-primary hover:bg-primary/90 text-primary-foreground mt-5"
                 >
@@ -791,6 +796,7 @@ ${[0,1,2,3,4,5].map(level => {
                     updateFormulaIngredientMutation.mutate({ id: fi.id, weight: newWeight.toFixed(3) });
                   });
                   toast.success(`Normalized to 100% (${normalizeMode})`);
+                  autoSnapshot(`Normalize to 100% (${normalizeMode})`);
                 }} className="text-xs border-border/50">
                   Normalize to 100% ({normalizeMode})
                 </Button>
@@ -856,92 +862,133 @@ ${[0,1,2,3,4,5].map(level => {
         {/* Notes Tab */}
         <TabsContent value="notes">
           {/* AI Generated Notes Block */}
-          {formula?.aiNotesLastGeneratedAt && (
-            <Card className="bg-blue-50 border-blue-200 border-2 mb-4">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2"><Sparkles className="size-4 text-blue-600" /> AI Generated Notes</CardTitle>
-                  <Button size="sm" variant="outline" className="text-xs" onClick={() => {
-                    const aiNote = (notes || []).find((n: any) => n.content.startsWith("## AI Generated Notes"));
-                    if (aiNote) {
-                      addNoteMutation.mutate({ formulaId, content: `[Copied from AI Notes]\n\n${aiNote.content}` });
-                      toast.success("AI notes copied to manual notes");
-                    }
-                  }}>
-                    <Copy className="size-3 mr-1" /> Copy to Manual Notes
-                  </Button>
-                </div>
-                <p className="text-[11px] text-blue-600 mt-1">Read-only. Generated on {new Date(formula.aiNotesLastGeneratedAt).toLocaleDateString()}</p>
-              </CardHeader>
-              <CardContent className="text-sm text-foreground/90 whitespace-pre-wrap prose prose-sm max-w-none">
-                {(notes || []).find((n: any) => n.content.startsWith("## AI Generated Notes"))?.content?.split("\n").map((line: string, idx: number) => {
-                  if (line.startsWith("##")) return <h3 key={idx} className="font-semibold mt-2 mb-1 text-blue-900">{line.replace(/^##\s*/, "")}</h3>;
-                  if (line.startsWith("- ")) return <li key={idx} className="ml-4 text-foreground/90">{line.replace(/^-\s*/, "")}</li>;
-                  if (line.trim()) return <p key={idx} className="text-foreground/90">{line}</p>;
-                  return null;
-                }) || <p className="text-muted-foreground">No AI notes available</p>}
-              </CardContent>
-            </Card>
-          )}
-          
-          <Card className="bg-card border-border/50">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2"><StickyNote className="size-4" /> Manual Notes</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Add note */}
-              <div className="flex gap-2">
-                <Textarea
-                  placeholder="Add a note... (e.g., 'Day 3: top notes faded, increase bergamot')"
-                  value={noteContent}
-                  onChange={e => setNoteContent(e.target.value)}
-                  className="bg-background border-border/50 min-h-[60px] text-sm"
-                />
-                <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 self-end"
-                  disabled={!noteContent.trim() || addNoteMutation.isPending}
-                  onClick={() => addNoteMutation.mutate({ formulaId, content: noteContent.trim() })}>
-                  {addNoteMutation.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
-                </Button>
-              </div>
-              {/* Notes list */}
-              {(notes || []).length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">No notes yet. Add observations from your testing sessions.</p>
-              ) : (
-                <div className="space-y-3">
-                  {(notes || []).map((note: any) => (
-                    <div key={note.id} className="bg-secondary/50 rounded-lg p-3 space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-muted-foreground">
-                          {new Date(note.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-                        </span>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="size-6 text-muted-foreground hover:text-foreground"
-                            onClick={() => { setEditingNoteId(note.id); setEditingNoteContent(note.content); }}>
-                            <Pencil className="size-3" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="size-6 text-destructive hover:bg-destructive/10"
-                            onClick={() => deleteNoteMutation.mutate({ id: note.id })}>
-                            <Trash2 className="size-3" />
-                          </Button>
-                        </div>
+          {(() => {
+            const aiNote = (notes || []).find((n: any) => n.content.startsWith("## AI Generated Notes"));
+            const manualNotes = (notes || []).filter((n: any) => !n.content.startsWith("## AI Generated Notes"));
+            return (
+              <>
+                {/* Generate AI Notes Button (always visible) */}
+                <Card className="bg-card border-border/50 mb-4">
+                  <CardContent className="py-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="size-4 text-primary" />
+                        <span className="text-sm font-medium">AI-Powered Notes</span>
+                        {formula?.aiNotesLastGeneratedAt && (
+                          <span className="text-[10px] text-muted-foreground ml-2">Last generated: {new Date(formula.aiNotesLastGeneratedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                        )}
                       </div>
-                      {editingNoteId === note.id ? (
-                        <div className="flex gap-2">
-                          <Textarea value={editingNoteContent} onChange={e => setEditingNoteContent(e.target.value)} className="bg-background border-border/50 min-h-[40px] text-sm" />
-                          <div className="flex flex-col gap-1 shrink-0">
-                            <Button size="icon" className="size-6 bg-primary" onClick={() => updateNoteMutation.mutate({ id: note.id, content: editingNoteContent.trim() })}><Check className="size-3" /></Button>
-                            <Button size="icon" variant="ghost" className="size-6" onClick={() => setEditingNoteId(null)}><X className="size-3" /></Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-foreground/90 whitespace-pre-wrap">{note.content}</p>
-                      )}
+                      <Button
+                        size="sm"
+                        onClick={() => generateAINotesMutation.mutate({ formulaId })}
+                        disabled={generateAINotesMutation.isPending || formulaIngredients.length === 0}
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                      >
+                        {generateAINotesMutation.isPending ? (
+                          <><Loader2 className="size-3.5 animate-spin mr-1" /> Generating...</>
+                        ) : aiNote ? (
+                          <><RefreshCw className="size-3.5 mr-1" /> Regenerate AI Notes</>
+                        ) : (
+                          <><Sparkles className="size-3.5 mr-1" /> Generate AI Notes</>
+                        )}
+                      </Button>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  </CardContent>
+                </Card>
+
+                {/* AI Notes Read-Only Block */}
+                {aiNote && (
+                  <Card className="bg-blue-50 border-blue-200 border-2 mb-4">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <LockKeyhole className="size-3.5 text-blue-600" />
+                          <CardTitle className="text-base text-blue-900">AI Generated Notes</CardTitle>
+                          <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Read-only</span>
+                        </div>
+                        <Button size="sm" variant="outline" className="text-xs border-blue-300 text-blue-700 hover:bg-blue-100" onClick={() => {
+                          addNoteMutation.mutate({ formulaId, content: `[Copied from AI Notes — ${new Date().toLocaleDateString()}]\n\n${aiNote.content.replace("## AI Generated Notes\n\n", "")}` });
+                          toast.success("AI notes copied to manual notes — you can now edit the copy");
+                        }}>
+                          <Copy className="size-3 mr-1" /> Copy to Manual Notes
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="text-sm space-y-2 pt-0">
+                      {aiNote.content.split("\n").map((line: string, idx: number) => {
+                        if (line.startsWith("### ")) return <h4 key={idx} className="font-semibold text-blue-900 mt-3 mb-0.5 text-sm">{line.replace(/^###\s*/, "")}</h4>;
+                        if (line.startsWith("## ")) return null; // Skip the title, already in header
+                        if (line.startsWith("**AI Notes")) return <p key={idx} className="text-[11px] text-blue-600 italic">{line.replace(/\*\*/g, "")}</p>;
+                        if (line.startsWith("- ")) return <li key={idx} className="ml-4 text-foreground/80 list-disc">{line.replace(/^-\s*/, "")}</li>;
+                        if (line.trim()) return <p key={idx} className="text-foreground/80 leading-relaxed">{line}</p>;
+                        return null;
+                      })}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Manual Notes */}
+                <Card className="bg-card border-border/50">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2"><StickyNote className="size-4" /> Manual Notes</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Add note */}
+                    <div className="flex gap-2">
+                      <Textarea
+                        placeholder="Add a note... (e.g., 'Day 3: top notes faded, increase bergamot')"
+                        value={noteContent}
+                        onChange={e => setNoteContent(e.target.value)}
+                        className="bg-background border-border/50 min-h-[60px] text-sm"
+                      />
+                      <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 self-end"
+                        disabled={!noteContent.trim() || addNoteMutation.isPending}
+                        onClick={() => addNoteMutation.mutate({ formulaId, content: noteContent.trim() })}>
+                        {addNoteMutation.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
+                      </Button>
+                    </div>
+                    {/* Filtered manual notes list (excludes AI notes) */}
+                    {manualNotes.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-6">No manual notes yet. Add observations from your testing sessions.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {manualNotes.map((note: any) => (
+                          <div key={note.id} className="bg-secondary/50 rounded-lg p-3 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-muted-foreground">
+                                {new Date(note.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                              <div className="flex gap-1">
+                                <Button variant="ghost" size="icon" className="size-6 text-muted-foreground hover:text-foreground"
+                                  onClick={() => { setEditingNoteId(note.id); setEditingNoteContent(note.content); }}>
+                                  <Pencil className="size-3" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="size-6 text-destructive hover:bg-destructive/10"
+                                  onClick={() => deleteNoteMutation.mutate({ id: note.id })}>
+                                  <Trash2 className="size-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            {editingNoteId === note.id ? (
+                              <div className="flex gap-2">
+                                <Textarea value={editingNoteContent} onChange={e => setEditingNoteContent(e.target.value)} className="bg-background border-border/50 min-h-[40px] text-sm" />
+                                <div className="flex flex-col gap-1 shrink-0">
+                                  <Button size="icon" className="size-6 bg-primary" onClick={() => updateNoteMutation.mutate({ id: note.id, content: editingNoteContent.trim() })}><Check className="size-3" /></Button>
+                                  <Button size="icon" variant="ghost" className="size-6" onClick={() => setEditingNoteId(null)}><X className="size-3" /></Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-foreground/90 whitespace-pre-wrap">{note.content}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            );
+          })()}
         </TabsContent>
         {/* Cost Breakdown Tab */}
         <TabsContent value="costs">

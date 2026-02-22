@@ -83,9 +83,9 @@
 ## UPGRADE 1: ENHANCE EXISTING NOTES, BULK DILUTION, AND LIVE TOTALS
 
 - [x] Feature: AI-generated notes append-only block with structured content (server procedure added)
-- [ ] Feature: Copy AI Notes to Manual Notes button to create editable version (UI pending)
-- [ ] Feature: Lock AI Generated Notes block from direct editing (UI pending)
-- [ ] Feature: Regenerate AI notes block when formula is re-saved after AI changes (UI pending)
+- [x] Feature: Copy AI Notes to Manual Notes button to create editable version (implemented and tested)
+- [x] Feature: Lock AI Generated Notes block from direct editing (read-only blue card with LockKeyhole icon)
+- [x] Feature: Regenerate AI notes updates only AI block, preserves manual notes (implemented)
 - [x] Feature: Bulk Set Universal Dilution % control with Apply button (implemented and tested)
 - [x] Feature: Per-ingredient dilution override after universal dilution applied (editable cells remain independent)
 - [x] Feature: Real-time recalculation of totals and percentages on weight/dilution changes (useMemo calculations)

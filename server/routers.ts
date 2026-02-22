@@ -661,6 +661,19 @@ Return ONLY the JSON object, no markdown fencing.`;
         const timestamp = new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
         const aiNotesBlock = `## AI Generated Notes\n\n**AI Notes last generated:** ${timestamp}\n\n### A) Solvent Recommendations\n${aiNotesData.solventRecommendations}\n\n### B) Dilution Guidance\n${aiNotesData.dilutionGuidance}\n\n### C) Maturation / Aging Suggestion\n${aiNotesData.maturationSuggestion}\n\n### D) Mixing Order / Handling\n${aiNotesData.mixingOrder}\n\n### E) Safety Reminder\n${aiNotesData.safetyReminder}\n\n### F) Practical Use Guidance\n${aiNotesData.practicalUseGuidance}`;
 
+        // Delete any existing AI note for this formula
+        const existingNotes = await listFormulaNotes(formula.id);
+        const existingAiNote = existingNotes.find((n: any) => n.content.startsWith("## AI Generated Notes"));
+        if (existingAiNote) {
+          await deleteFormulaNote(existingAiNote.id);
+        }
+
+        // Insert the new AI note
+        await addFormulaNote({ formulaId: formula.id, content: aiNotesBlock });
+
+        // Update the formula's aiNotesLastGeneratedAt timestamp
+        await updateFormula(formula.id, ctx.user.id, { aiNotesLastGeneratedAt: new Date() });
+
         return { aiNotesBlock, timestamp };
       }),
   }),
