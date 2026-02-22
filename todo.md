@@ -179,3 +179,14 @@
 - [x] Tables: Improve spacing, alignment, and density in Formula Builder, Library, and Import pages
 - [x] Toggles: Improve visual clarity of calculated vs editable fields
 - [x] Verify: All changes compatible with v1.0 manual (no workflow, logic, or behavior changes)
+
+## UI REFINEMENT v1.2: SIDEBAR & MICRO-ANIMATIONS
+
+- [x] Sidebar: Refine item spacing, padding, and vertical rhythm
+- [x] Sidebar: Improve active state contrast and hover transitions
+- [x] Sidebar: Adjust icon sizing and alignment
+- [x] Sidebar: Refine user profile area at bottom
+- [x] Animations: Smooth tab switch transitions
+- [x] Animations: Card hover and entrance transitions
+- [x] Animations: Dialog open/close transitions
+- [x] Verify: All changes compatible with v1.0 manual (no new concepts, labels, or behaviors)
