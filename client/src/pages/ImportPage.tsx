@@ -224,6 +224,7 @@ function FormulaImportWizard() {
   const [userDecisions, setUserDecisions] = useState<Map<number, UserDecision>>(new Map());
   const [substituteSuggestions, setSubstituteSuggestions] = useState<Map<number, SubstituteSuggestion[]>>(new Map());
   const [loadingSubs, setLoadingSubs] = useState<Set<number>>(new Set());
+  const [importSubBasis, setImportSubBasis] = useState<"as-dosed" | "neat-active">("neat-active");
   const [isParsing, setIsParsing] = useState(false);
   const [isMatching, setIsMatching] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -385,6 +386,7 @@ function FormulaImportWizard() {
       const result = await substituteMutation.mutateAsync({
         ingredientName: item.originalName,
         ingredientNotes: item.notes,
+        basis: importSubBasis,
       });
       setSubstituteSuggestions(prev => new Map(prev).set(idx, result.suggestions));
       if (result.suggestions.length === 0) {
@@ -787,8 +789,37 @@ function FormulaImportWizard() {
           {/* Match Report Table */}
           <Card className="bg-card border-border/50">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold">Match Report</CardTitle>
-              <CardDescription>Review matches and resolve unmatched ingredients before saving.</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base font-semibold">Match Report</CardTitle>
+                  <CardDescription>Review matches and resolve unmatched ingredients before saving.</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">Substitution Basis:</span>
+                  <div className="flex items-center gap-1 bg-secondary/50 rounded-md p-0.5">
+                    <button
+                      className={`px-2.5 py-1 text-xs rounded transition-colors ${
+                        importSubBasis === "as-dosed"
+                          ? "bg-primary text-primary-foreground font-medium shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      onClick={() => setImportSubBasis("as-dosed")}
+                    >
+                      As-Dosed
+                    </button>
+                    <button
+                      className={`px-2.5 py-1 text-xs rounded transition-colors ${
+                        importSubBasis === "neat-active"
+                          ? "bg-primary text-primary-foreground font-medium shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      onClick={() => setImportSubBasis("neat-active")}
+                    >
+                      Neat/Active
+                    </button>
+                  </div>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">

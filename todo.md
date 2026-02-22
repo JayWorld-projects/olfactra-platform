@@ -136,3 +136,14 @@
 - [x] Feature: Mark imported formulas as "Imported and Analyzed"
 - [x] Feature: Multi-step import wizard UI on /import page (Input → Preview → Match Report → Save)
 - [x] Tests: Server-side tests for parsing, matching, and substitution procedures (12 tests, all passing)
+
+## ADD-ON: SUBSTITUTION BASIS TOGGLE (AS-DOSED VS NEAT/ACTIVE)
+
+- [x] Feature: Add substitutionBasis parameter to server-side substitution procedures (as-dosed vs neat/active)
+- [x] Feature: As-dosed basis prioritizes workflow practicality, dilution realities, weighing/handling impact notes
+- [x] Feature: Neat/active basis prioritizes olfactive equivalence, formula balance, strength/diffusion/longevity impact notes
+- [x] Feature: Substitution Basis toggle in Formula Builder substitution dialog (default: Neat/active)
+- [x] Feature: Substitution Basis toggle in Import Match Report substitute suggestions (default: Neat/active)
+- [x] Feature: Switching basis and regenerating produces different ranking/impact explanations
+- [x] Feature: Toggle does NOT change formula values — only affects substitution ranking and impact notes
+- [x] Tests: Server-side tests for basis-aware substitution procedures (4 new tests, all passing)

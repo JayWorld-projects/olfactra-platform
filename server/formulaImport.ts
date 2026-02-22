@@ -451,6 +451,7 @@ Return a JSON object:
     .input(z.object({
       ingredientName: z.string(),
       ingredientNotes: z.string().nullable(),
+      basis: z.enum(["as-dosed", "neat-active"]).optional().default("neat-active"),
     }))
     .mutation(async ({ ctx, input }) => {
       const library = await listIngredients(ctx.user.id);
@@ -459,10 +460,25 @@ Return a JSON object:
         `- ID:${i.id} | ${i.name} | Category: ${i.category || "N/A"} | Longevity: ${i.longevity ?? "N/A"}/5 | Desc: ${(i.description || "N/A").substring(0, 100)}`
       ).join("\n");
 
+      const basisInstructions = input.basis === "as-dosed"
+        ? `SUBSTITUTION BASIS: AS-DOSED (practical/workflow focus)
+- Prioritize workflow practicality and dilution realities
+- Rank substitutes by how easy they are to work with at typical dosages
+- Impact notes (expectedImpact) should emphasize: weighing and handling, dilution compatibility, solvent considerations, practical shelf life
+- Consider whether the substitute is commonly available at similar dilutions
+- Focus on "drop-in replacement" viability from a practical standpoint`
+        : `SUBSTITUTION BASIS: NEAT/ACTIVE (olfactive equivalence focus)
+- Prioritize olfactive equivalence and formula balance
+- Rank substitutes by how closely they match the olfactory contribution of the neat/active material
+- Impact notes (expectedImpact) should emphasize: scent strength, diffusion, longevity, accord balance, sillage
+- Focus on matching the olfactory "role" this ingredient plays in the formula`;
+
       const prompt = `You are an expert perfumer. I need substitute suggestions for an ingredient that is NOT in my library.
 
 Missing ingredient: "${input.ingredientName}"
 ${input.ingredientNotes ? `Additional context: ${input.ingredientNotes}` : ""}
+
+${basisInstructions}
 
 My available ingredients library:
 ${libraryList}
@@ -473,6 +489,7 @@ Suggest 3 to 5 substitute candidates from my library ONLY. For each:
 3. Provide a confidence level (high, medium, low)
 4. If confidence is low, note "low confidence, user confirmation recommended"
 5. If no reasonable substitute exists, return an empty array
+6. Write the explanation and expectedImpact based on the ${input.basis === "as-dosed" ? "as-dosed practical" : "neat/active olfactive"} criteria above
 
 Return JSON:
 {

@@ -97,6 +97,7 @@ function BuilderContent() {
   const [showRevert, setShowRevert] = useState<number | null>(null);
   const [compareVersions, setCompareVersions] = useState<[number | null, number | null]>([null, null]);
   const [showSubstitution, setShowSubstitution] = useState<{ ingredientId: number; ingredientName: string; fiId: number } | null>(null);
+  const [substitutionBasis, setSubstitutionBasis] = useState<"as-dosed" | "neat-active">("neat-active");
 
   const { activeWorkspaceId } = useWorkspace();
   const { data: formula, isLoading } = trpc.formula.get.useQuery({ id: formulaId });
@@ -764,7 +765,7 @@ ${[0,1,2,3,4,5].map(level => {
                                 <Button variant="ghost" size="icon" className="size-7 text-primary hover:bg-primary/10" title="Find substitutes"
                                   onClick={() => {
                                     setShowSubstitution({ ingredientId: fi.ingredientId, ingredientName: fi.ingredient?.name || "Unknown", fiId: fi.id });
-                                    substitutionMutation.mutate({ ingredientId: fi.ingredientId, ingredientName: fi.ingredient?.name || "Unknown", formulaId });
+                                    substitutionMutation.mutate({ ingredientId: fi.ingredientId, ingredientName: fi.ingredient?.name || "Unknown", formulaId, basis: substitutionBasis });
                                   }}>
                                   <ArrowRightLeft className="size-3" />
                                 </Button>
@@ -1289,6 +1290,41 @@ ${[0,1,2,3,4,5].map(level => {
               Substitutes for {showSubstitution?.ingredientName}
             </DialogTitle>
           </DialogHeader>
+          <div className="flex items-center gap-3 px-1 pb-1">
+            <span className="text-xs font-medium text-muted-foreground">Substitution Basis:</span>
+            <div className="flex items-center gap-1 bg-secondary/50 rounded-md p-0.5">
+              <button
+                className={`px-2.5 py-1 text-xs rounded transition-colors ${
+                  substitutionBasis === "as-dosed"
+                    ? "bg-primary text-primary-foreground font-medium shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => {
+                  setSubstitutionBasis("as-dosed");
+                  if (showSubstitution) {
+                    substitutionMutation.mutate({ ingredientId: showSubstitution.ingredientId, ingredientName: showSubstitution.ingredientName, formulaId, basis: "as-dosed" });
+                  }
+                }}
+              >
+                As-Dosed
+              </button>
+              <button
+                className={`px-2.5 py-1 text-xs rounded transition-colors ${
+                  substitutionBasis === "neat-active"
+                    ? "bg-primary text-primary-foreground font-medium shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => {
+                  setSubstitutionBasis("neat-active");
+                  if (showSubstitution) {
+                    substitutionMutation.mutate({ ingredientId: showSubstitution.ingredientId, ingredientName: showSubstitution.ingredientName, formulaId, basis: "neat-active" });
+                  }
+                }}
+              >
+                Neat/Active
+              </button>
+            </div>
+          </div>
           {substitutionMutation.isPending ? (
             <div className="flex flex-col items-center gap-3 py-8">
               <Loader2 className="size-8 animate-spin text-primary" />
@@ -1298,7 +1334,7 @@ ${[0,1,2,3,4,5].map(level => {
             <div className="flex flex-col items-center gap-3 py-8">
               <AlertTriangle className="size-8 text-destructive" />
               <p className="text-sm text-muted-foreground">Failed to find substitutes. Please try again.</p>
-              <Button variant="outline" size="sm" onClick={() => showSubstitution && substitutionMutation.mutate({ ingredientId: showSubstitution.ingredientId, ingredientName: showSubstitution.ingredientName, formulaId })}>
+              <Button variant="outline" size="sm" onClick={() => showSubstitution && substitutionMutation.mutate({ ingredientId: showSubstitution.ingredientId, ingredientName: showSubstitution.ingredientName, formulaId, basis: substitutionBasis })}>
                 Retry
               </Button>
             </div>
