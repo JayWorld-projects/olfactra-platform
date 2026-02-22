@@ -121,17 +121,19 @@ function BuilderContent() {
 
   const invalidateFormula = () => utils.formula.get.invalidate({ id: formulaId });
 
-  const updateFormulaMutation = trpc.formula.update.useMutation({ onSuccess: invalidateFormula });
+  const updateFormulaMutation = trpc.formula.update.useMutation({
+    onSuccess: () => { invalidateFormula(); autoSnapshot("Save"); },
+  });
   const deleteFormulaMutation = trpc.formula.delete.useMutation({
     onSuccess: () => { toast.success("Formula deleted"); setLocation("/formulas"); },
   });
   const addIngredientMutation = trpc.formula.addIngredient.useMutation({
-    onSuccess: () => { invalidateFormula(); setShowAddIngredient(false); toast.success("Ingredient added"); },
+    onSuccess: () => { invalidateFormula(); setShowAddIngredient(false); toast.success("Ingredient added"); autoSnapshot("Add Ingredient"); },
   });
   const updateIngredientMutation = trpc.formula.updateIngredient.useMutation({ onSuccess: invalidateFormula });
   const updateFormulaIngredientMutation = trpc.formula.updateIngredient.useMutation({ onSuccess: invalidateFormula });
   const removeIngredientMutation = trpc.formula.removeIngredient.useMutation({
-    onSuccess: () => { invalidateFormula(); toast.success("Ingredient removed"); },
+    onSuccess: () => { invalidateFormula(); toast.success("Ingredient removed"); autoSnapshot("Remove Ingredient"); },
   });
   const cloneMutation = trpc.formula.clone.useMutation({
     onSuccess: (data) => { toast.success("Formula duplicated"); setShowDuplicate(false); setLocation(`/formulas/${data.id}`); },
@@ -160,6 +162,16 @@ function BuilderContent() {
   const createVersionMutation = trpc.version.create.useMutation({
     onSuccess: (data) => { utils.version.list.invalidate({ formulaId }); setShowSaveVersion(false); setVersionLabel(""); toast.success(`Saved as Version ${data.versionNumber}`); },
   });
+  
+  // Auto-save helper for major actions (lightweight v1)
+  const autoSnapshot = useCallback((action: string) => {
+    if (!formula) return;
+    const timestamp = new Date().toLocaleString();
+    createVersionMutation.mutate({
+      formulaId,
+      label: `Auto-save: ${action} (${timestamp})`,
+    });
+  }, [formulaId, formula, createVersionMutation]);
   const revertVersionMutation = trpc.version.revert.useMutation({
     onSuccess: (data) => { invalidateFormula(); utils.version.list.invalidate({ formulaId }); setShowRevert(null); toast.success(`Reverted to Version ${data.versionNumber}`); },
   });
@@ -843,9 +855,38 @@ ${[0,1,2,3,4,5].map(level => {
 
         {/* Notes Tab */}
         <TabsContent value="notes">
+          {/* AI Generated Notes Block */}
+          {formula?.aiNotesLastGeneratedAt && (
+            <Card className="bg-blue-50 border-blue-200 border-2 mb-4">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2"><Sparkles className="size-4 text-blue-600" /> AI Generated Notes</CardTitle>
+                  <Button size="sm" variant="outline" className="text-xs" onClick={() => {
+                    const aiNote = (notes || []).find((n: any) => n.content.startsWith("## AI Generated Notes"));
+                    if (aiNote) {
+                      addNoteMutation.mutate({ formulaId, content: `[Copied from AI Notes]\n\n${aiNote.content}` });
+                      toast.success("AI notes copied to manual notes");
+                    }
+                  }}>
+                    <Copy className="size-3 mr-1" /> Copy to Manual Notes
+                  </Button>
+                </div>
+                <p className="text-[11px] text-blue-600 mt-1">Read-only. Generated on {new Date(formula.aiNotesLastGeneratedAt).toLocaleDateString()}</p>
+              </CardHeader>
+              <CardContent className="text-sm text-foreground/90 whitespace-pre-wrap prose prose-sm max-w-none">
+                {(notes || []).find((n: any) => n.content.startsWith("## AI Generated Notes"))?.content?.split("\n").map((line: string, idx: number) => {
+                  if (line.startsWith("##")) return <h3 key={idx} className="font-semibold mt-2 mb-1 text-blue-900">{line.replace(/^##\s*/, "")}</h3>;
+                  if (line.startsWith("- ")) return <li key={idx} className="ml-4 text-foreground/90">{line.replace(/^-\s*/, "")}</li>;
+                  if (line.trim()) return <p key={idx} className="text-foreground/90">{line}</p>;
+                  return null;
+                }) || <p className="text-muted-foreground">No AI notes available</p>}
+              </CardContent>
+            </Card>
+          )}
+          
           <Card className="bg-card border-border/50">
             <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2"><StickyNote className="size-4" /> Formula Journal</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2"><StickyNote className="size-4" /> Manual Notes</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Add note */}

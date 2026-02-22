@@ -93,3 +93,15 @@
 - [x] Feature: Toggle between As-dosed and Neat/active percentage views (default As-dosed) (tested)
 - [x] Feature: Normalize to 100% button with option to choose normalization basis (as-dosed default)
 - [x] Feature: Warning when percentages do not equal 100% (amber warning with sum display)
+
+## NEXT STEPS: AI NOTES UI + AUTO-SAVE V1
+
+- [x] Feature: Read-only/locked AI Generated Notes block in Notes tab (blue card with lock indicator)
+- [x] Feature: Copy AI Notes to Manual Notes button with formatting preservation (copies with timestamp marker)
+- [x] Feature: Verify manual notes remain fully editable after copy (independent from AI block)
+- [x] Feature: Regenerate AI notes updates only AI block, never overwrites manual notes (separate note entries)
+- [x] Feature: Lightweight auto-save v1 - snapshot on Save button click (auto-save: Save timestamp)
+- [x] Feature: Lightweight auto-save v1 - snapshot on Add/Remove Ingredient (auto-save: Add/Remove Ingredient timestamp)
+- [x] Feature: Auto-snapshots include full ingredient list with weights and dilution %
+- [x] Feature: Manual version snapshots still available via Save Snapshot button
+
