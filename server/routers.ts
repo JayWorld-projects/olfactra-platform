@@ -1500,12 +1500,18 @@ Return JSON:
         ingredientId: z.number(),
         ingredientName: z.string(),
         formulaId: z.number(),
+        basis: z.enum(["as-dosed", "neat-active"]).optional().default("neat-active"),
       }))
       .mutation(async ({ ctx, input }) => {
         const allIngredients = await listIngredients(ctx.user.id);
         const formulaItems = await getFormulaIngredients(input.formulaId);
         const currentIngredient = allIngredients.find(i => i.id === input.ingredientId);
         if (!currentIngredient) throw new Error("Ingredient not found");
+
+        // Find the formula ingredient entry to get dilution info
+        const currentFi = formulaItems.find(fi => fi.ingredientId === input.ingredientId);
+        const currentDilution = currentFi?.dilutionPercent || "100";
+        const currentWeight = currentFi?.weight || "unknown";
 
         // Exclude ingredients already in the formula
         const formulaIngIds = new Set(formulaItems.map(fi => fi.ingredientId));
@@ -1515,6 +1521,20 @@ Return JSON:
           `- ID:${i.id} | ${i.name} | Category: ${i.category || "N/A"} | Longevity: ${i.longevity ?? "N/A"}/5 | Cost: $${i.costPerGram || "N/A"}/g`
         ).join("\n");
 
+        const basisInstructions = input.basis === "as-dosed"
+          ? `SUBSTITUTION BASIS: AS-DOSED (practical/workflow focus)
+- Prioritize workflow practicality and dilution realities
+- Rank substitutes by how easy they are to work with at the current dosage (${currentWeight}g at ${currentDilution}% dilution)
+- Impact notes should emphasize: weighing and handling, dilution compatibility, solvent considerations, practical shelf life
+- Consider whether the substitute is commonly available at similar dilutions
+- Focus on "drop-in replacement" viability from a practical standpoint`
+          : `SUBSTITUTION BASIS: NEAT/ACTIVE (olfactive equivalence focus)
+- Prioritize olfactive equivalence and formula balance
+- Rank substitutes by how closely they match the olfactory contribution of the neat/active material
+- Impact notes should emphasize: scent strength, diffusion, longevity, accord balance, sillage
+- Consider the active concentration: ${currentWeight}g at ${currentDilution}% dilution = ${(parseFloat(currentWeight || "0") * parseFloat(currentDilution || "100") / 100).toFixed(3)}g neat/active
+- Focus on matching the olfactory "role" this ingredient plays in the formula`;
+
         const prompt = `You are an expert perfumer. I need substitution suggestions for this ingredient in a formula:
 
 Current ingredient: ${currentIngredient.name}
@@ -1522,13 +1542,16 @@ Current ingredient: ${currentIngredient.name}
 - Longevity: ${currentIngredient.longevity ?? "N/A"}/5
 - Cost: $${currentIngredient.costPerGram || "N/A"}/g
 - Description: ${currentIngredient.description || "N/A"}
+- Current dosage: ${currentWeight}g at ${currentDilution}% dilution
+
+${basisInstructions}
 
 Available ingredients in the user's library (not already in this formula):
 ${candidateList}
 
 Suggest up to 5 substitutes from the available list. For each, explain:
-1. Why it's a good substitute (olfactory similarity, functional role)
-2. How it differs (what changes in the scent profile)
+1. Why it's a good substitute (based on the ${input.basis === "as-dosed" ? "as-dosed practical" : "neat/active olfactive"} criteria above)
+2. How it differs (${input.basis === "as-dosed" ? "practical handling differences, dilution considerations" : "what changes in the scent profile, accord impact"})
 3. Whether it's a cost-effective swap
 
 Return JSON:
