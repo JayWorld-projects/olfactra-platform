@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useNavItems } from "./Home";
 import { trpc } from "@/lib/trpc";
 import { FlaskConical, Plus, Loader2, Copy, GitCompareArrows, X, Sparkles, Beaker, GitBranch } from "lucide-react";
+import { FormulaListSkeleton } from "@/components/FormulaListSkeleton";
 import FormulaWizard from "@/components/FormulaWizard";
 import { useState } from "react";
 import { useLocation } from "wouter";
@@ -158,9 +159,7 @@ function FormulaListContent() {
       )}
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="size-6 animate-spin text-primary" />
-        </div>
+        <FormulaListSkeleton />
       ) : !formulas || formulas.length === 0 ? (
         <Card className="py-16 bg-card border-border/50">
           <CardContent className="flex flex-col items-center gap-4 text-center">

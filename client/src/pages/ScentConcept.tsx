@@ -438,8 +438,8 @@ function ScentConceptContent() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-serif font-bold text-foreground">Scent Lab</h2>
-          <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
+          <h2 className="text-2xl font-serif font-bold text-foreground tracking-tight">Scent Lab</h2>
+          <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed max-w-lg">
             Describe a memory, place, or feeling. Select product types, then generate recipes from your ingredient library.
           </p>
         </div>
@@ -588,15 +588,15 @@ function ScentConceptContent() {
                       <button
                         key={pt.key}
                         onClick={() => toggleType(pt.key)}
-                        className={`flex items-center gap-2 p-2.5 rounded-lg border text-sm font-medium transition-all ${
+                        className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all duration-150 ${
                           isSelected
-                            ? `${pt.bgColor} ${pt.color} ${pt.borderColor}`
-                            : "bg-card/50 text-muted-foreground/60 border-border/20 hover:border-border/40"
+                            ? `${pt.bgColor} ${pt.color} ${pt.borderColor} shadow-sm`
+                            : "bg-secondary/30 text-muted-foreground border-border/30 hover:border-border/50 hover:bg-secondary/50"
                         }`}
                       >
                         <Icon className="size-4 shrink-0" />
                         <span className="truncate">{pt.label}</span>
-                        {isSelected && <Check className="size-3 ml-auto shrink-0" />}
+                        {isSelected && <Check className="size-3 ml-auto shrink-0 opacity-80" />}
                       </button>
                     );
                   })}
@@ -620,11 +620,11 @@ function ScentConceptContent() {
           {/* Loading State */}
           {scentMutation.isPending && (
             <Card className="bg-card border-border/50">
-              <CardContent className="py-12 flex flex-col items-center gap-4">
-                <div className="size-16 rounded-full border-2 border-primary/20 flex items-center justify-center">
+              <CardContent className="py-14 flex flex-col items-center gap-5">
+                <div className="size-16 rounded-full border-2 border-primary/20 flex items-center justify-center bg-primary/5">
                   <Loader2 className="size-8 text-primary animate-spin" />
                 </div>
-                <div className="text-center space-y-1">
+                <div className="text-center space-y-1.5">
                   <p className="text-foreground font-medium">Crafting your recipes...</p>
                   <p className="text-muted-foreground text-sm">This may take up to 2 minutes for multiple product types</p>
                 </div>
@@ -646,13 +646,13 @@ function ScentConceptContent() {
           {result && !scentMutation.isPending && (
             <div className="space-y-4">
               {/* Filter Bar */}
-              <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center justify-between flex-wrap gap-3 pb-1">
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     onClick={() => setActiveFilter("all")}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 border ${
                       activeFilter === "all"
-                        ? "bg-primary text-primary-foreground border-primary"
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
                         : "bg-card text-muted-foreground border-border/50 hover:border-primary/40 hover:text-foreground"
                     }`}
                   >
@@ -667,9 +667,9 @@ function ScentConceptContent() {
                       <button
                         key={section.key}
                         onClick={() => setActiveFilter(section.key)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border flex items-center gap-1.5 ${
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 border flex items-center gap-1.5 ${
                           activeFilter === section.key
-                            ? `${pt.bgColor} ${pt.color} ${pt.borderColor}`
+                            ? `${pt.bgColor} ${pt.color} ${pt.borderColor} shadow-sm`
                             : "bg-card text-muted-foreground border-border/50 hover:border-primary/40 hover:text-foreground"
                         }`}
                       >
@@ -742,7 +742,7 @@ function ScentConceptContent() {
                         </div>
                       </CardHeader>
                       <CardContent>
-                        <div className="prose prose-sm prose-invert max-w-none [&_table]:w-full [&_table]:border-collapse [&_th]:bg-secondary/50 [&_th]:text-foreground [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:text-xs [&_th]:font-semibold [&_th]:border [&_th]:border-border/30 [&_td]:px-3 [&_td]:py-2 [&_td]:text-sm [&_td]:border [&_td]:border-border/30 [&_h3]:text-accent [&_strong]:text-foreground">
+                        <div className="prose prose-sm prose-invert max-w-none [&_table]:w-full [&_table]:border-collapse [&_table]:rounded-lg [&_table]:overflow-hidden [&_th]:bg-secondary/60 [&_th]:text-foreground [&_th]:px-3 [&_th]:py-2.5 [&_th]:text-left [&_th]:text-xs [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-wider [&_th]:border [&_th]:border-border/30 [&_td]:px-3 [&_td]:py-2.5 [&_td]:text-sm [&_td]:border [&_td]:border-border/20 [&_tr:hover_td]:bg-secondary/20 [&_h3]:text-accent [&_h3]:text-sm [&_h3]:font-semibold [&_strong]:text-foreground [&_p]:leading-relaxed [&_ul]:space-y-1 [&_li]:text-sm">
                           <Streamdown>{section.content}</Streamdown>
                         </div>
                       </CardContent>
@@ -778,10 +778,10 @@ function ScentConceptContent() {
               {inspirationPrompts.map((prompt, i) => (
                 <button
                   key={`${prompt.slice(0, 20)}-${i}`}
-                  className="w-full text-left p-3 rounded-lg border border-border/30 hover:border-accent/40 hover:bg-accent/5 transition-all text-sm text-muted-foreground hover:text-foreground leading-relaxed group"
+                  className="w-full text-left p-3 rounded-lg border border-border/30 hover:border-accent/40 hover:bg-accent/5 transition-all duration-150 text-sm text-muted-foreground hover:text-foreground leading-relaxed group"
                   onClick={() => setConcept(prompt)}
                 >
-                  <span className="line-clamp-3">"{prompt}"</span>
+                  <span className="line-clamp-3 italic">"{prompt}"</span>
                 </button>
               ))}
               <Button
@@ -859,13 +859,15 @@ function ScentConceptContent() {
           {/* Tips */}
           <Card className="bg-card border-border/50">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">Tips</CardTitle>
+              <CardTitle className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                <Lightbulb className="size-3.5" /> Tips
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-xs text-muted-foreground leading-relaxed">
-              <p>Select only the product types you need for faster, more focused recipes.</p>
-              <p>Click <strong className="text-foreground">Save</strong> on any recipe to add it to your formulas, or <strong className="text-foreground">Save All</strong> for the entire batch.</p>
-              <p>Use the filter tabs to view one product type at a time after generation.</p>
-              <p>All generations are auto-saved to History for later retrieval.</p>
+            <CardContent className="space-y-2.5 text-xs text-muted-foreground leading-relaxed">
+              <p className="pl-3 border-l-2 border-border/40">Select only the product types you need for faster, more focused recipes.</p>
+              <p className="pl-3 border-l-2 border-border/40">Click <strong className="text-foreground">Save</strong> on any recipe to add it to your formulas, or <strong className="text-foreground">Save All</strong> for the entire batch.</p>
+              <p className="pl-3 border-l-2 border-border/40">Use the filter tabs to view one product type at a time after generation.</p>
+              <p className="pl-3 border-l-2 border-border/40">All generations are auto-saved to History for later retrieval.</p>
             </CardContent>
           </Card>
         </div>

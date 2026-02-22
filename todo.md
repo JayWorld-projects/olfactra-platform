@@ -208,3 +208,13 @@
 - [x] Comparison: Align spacing, table styling, and card hierarchy with v1.1–v1.3 aesthetics
 - [x] Verify: No new logic, controls, metrics, or terminology
 - [x] Verify: All changes compatible with v1.0 manual
+
+## UI REFINEMENT v1.5: FORMULA LIST SKELETON & SCENT LAB STYLING
+
+- [x] Skeleton: FormulaList page loading skeleton with layout-matched card grid placeholders
+- [x] Skeleton: Same calm pulse animation as other skeletons
+- [x] Scent Lab: Refine generation wizard styling (input area, product type selectors)
+- [x] Scent Lab: Refine result cards and recipe display to match v1.1–v1.4 aesthetics
+- [x] Scent Lab: Align table headers, spacing, and card hierarchy
+- [x] Verify: No changes to logic, workflows, terminology, or order of operations
+- [x] Verify: All changes compatible with v1.0 manual
