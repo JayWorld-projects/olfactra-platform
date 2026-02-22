@@ -1343,7 +1343,7 @@ ${[0,1,2,3,4,5].map(level => {
                           const pctOfCost = totalCost > 0 ? (item.totalCost / totalCost) * 100 : 0;
                           const barWidth = costBreakdownData.maxItemCost > 0 ? (item.totalCost / costBreakdownData.maxItemCost) * 100 : 0;
                           return (
-                            <TableRow key={item.id} className="border-border/30">
+                            <TableRow key={item.id} className="border-border/30 hover:bg-secondary/30 transition-colors">
                               <TableCell>
                                 <span className="font-medium text-sm text-foreground">{item.name}</span>
                               </TableCell>
@@ -1473,19 +1473,19 @@ ${[0,1,2,3,4,5].map(level => {
                                   <Table>
                                     <TableHeader>
                                       <TableRow className="border-border/30">
-                                        <TableHead className="text-xs text-muted-foreground">Ingredient</TableHead>
-                                        <TableHead className="text-xs text-muted-foreground">Category</TableHead>
-                                        <TableHead className="text-right text-xs text-muted-foreground">Weight (g)</TableHead>
-                                        <TableHead className="text-right text-xs text-muted-foreground">Dilution %</TableHead>
+                                        <TableHead className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Ingredient</TableHead>
+                                        <TableHead className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Category</TableHead>
+                                        <TableHead className="text-right text-xs text-muted-foreground font-semibold uppercase tracking-wider">Weight (g)</TableHead>
+                                        <TableHead className="text-right text-xs text-muted-foreground font-semibold uppercase tracking-wider">Dilution %</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                       {(snapshot.ingredients || []).map((ing: any, idx: number) => (
                                         <TableRow key={idx} className="border-border/20">
-                                          <TableCell className="text-xs font-medium py-1.5">{ing.ingredientName}</TableCell>
-                                          <TableCell className="text-xs text-muted-foreground py-1.5">{ing.category || "—"}</TableCell>
-                                          <TableCell className="text-right text-xs tabular-nums py-1.5">{parseFloat(ing.weight || "0").toFixed(3)}</TableCell>
-                                          <TableCell className="text-right text-xs tabular-nums py-1.5">{ing.dilutionPercent || "100"}%</TableCell>
+                                          <TableCell className="text-xs font-medium py-2">{ing.ingredientName}</TableCell>
+                                          <TableCell className="text-xs text-muted-foreground py-2">{ing.category || "—"}</TableCell>
+                                          <TableCell className="text-right text-xs tabular-nums py-2">{parseFloat(ing.weight || "0").toFixed(3)}</TableCell>
+                                          <TableCell className="text-right text-xs tabular-nums py-2">{ing.dilutionPercent || "100"}%</TableCell>
                                         </TableRow>
                                       ))}
                                     </TableBody>
