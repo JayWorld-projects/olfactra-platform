@@ -105,3 +105,13 @@
 - [x] Feature: Auto-snapshots include full ingredient list with weights and dilution %
 - [x] Feature: Manual version snapshots still available via Save Snapshot button
 
+
+## AUTO-SAVE V1 TRIGGER EXPANSION
+
+- [x] Feature: Auto-snapshot on Apply Universal Dilution % (already wired in previous phase)
+- [x] Feature: Auto-snapshot on Normalize to 100% (already wired in previous phase)
+- [x] Feature: Auto-snapshot on Manual Save action (Save button added to formula header)
+- [x] Feature: Auto-snapshot on Scale Formula (added with scale method and value in label)
+- [ ] Feature: Placeholder for auto-snapshot on Import Formula (Upgrade Prompt 2 — will wire when implemented)
+- [ ] Feature: Placeholder for auto-snapshot on Generate Product Version (Upgrade Prompt 3 — will wire when implemented)
+- [x] Verify: Snapshot payload confirmed — includes formula id, version number, timestamp, action type label, and full ingredient table (name, category, weight, dilution %, solvent, total weight)

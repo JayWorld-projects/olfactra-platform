@@ -369,6 +369,7 @@ function BuilderContent() {
       invalidateFormula();
       setShowScale(false);
       toast.success("Formula scaled");
+      autoSnapshot(`Scale Formula (${scaleMethod}: ${scaleValue})`);
     });
   };
 
@@ -558,6 +559,9 @@ ${[0,1,2,3,4,5].map(level => {
           </div>
         </div>
         <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+          <Button variant="default" size="sm" onClick={() => { autoSnapshot("Manual Save"); toast.success("Snapshot saved"); }} className="bg-primary text-primary-foreground">
+            <Save className="size-3.5" /> Save
+          </Button>
           <Button variant="outline" size="sm" onClick={() => { setDuplicateName(`${formula.name} (Copy)`); setShowDuplicate(true); }} className="border-border/50">
             <Copy className="size-3.5" /> Duplicate
           </Button>
