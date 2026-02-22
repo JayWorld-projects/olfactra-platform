@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavItems } from "./Home";
 import { trpc } from "@/lib/trpc";
-import { FlaskConical, Plus, Loader2, Copy, GitCompareArrows, X, Sparkles } from "lucide-react";
+import { FlaskConical, Plus, Loader2, Copy, GitCompareArrows, X, Sparkles, Beaker, GitBranch } from "lucide-react";
 import FormulaWizard from "@/components/FormulaWizard";
 import { useState } from "react";
 import { useLocation } from "wouter";
@@ -217,6 +217,16 @@ function FormulaListContent() {
                           <Copy className="size-3.5" />
                         </Button>
                       )}
+                      {(formula as any).parentFormulaId && (
+                        <Badge variant="outline" className="text-[10px] border-violet-500/50 text-violet-400 gap-0.5">
+                          <Beaker className="size-2.5" /> Derived
+                        </Badge>
+                      )}
+                      {formulas.some(f => (f as any).parentFormulaId === formula.id) && (
+                        <Badge variant="outline" className="text-[10px] border-emerald-500/50 text-emerald-400 gap-0.5">
+                          <GitBranch className="size-2.5" /> Has derivatives
+                        </Badge>
+                      )}
                       <Badge
                         variant={formula.status === "final" ? "default" : "secondary"}
                         className={`text-[11px] ${formula.status === "final" ? "bg-accent text-accent-foreground" : "bg-secondary text-secondary-foreground"}`}
@@ -228,10 +238,16 @@ function FormulaListContent() {
                   {formula.description && (
                     <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{formula.description}</p>
                   )}
-                  <div className="flex gap-3 text-xs text-muted-foreground">
+                  <div className="flex gap-3 text-xs text-muted-foreground flex-wrap">
                     <span>Solvent: {formula.solvent || "Ethanol"}</span>
                     {formula.totalWeight && parseFloat(formula.totalWeight) > 0 && (
                       <span className="text-accent font-medium">Total: {parseFloat(formula.totalWeight).toFixed(3)}g</span>
+                    )}
+                    {(formula as any).productType && (
+                      <span className="text-violet-400">{(formula as any).productType}</span>
+                    )}
+                    {(formula as any).fragranceLoadPercent && (
+                      <span className="text-violet-400/70">{(formula as any).fragranceLoadPercent}% load</span>
                     )}
                   </div>
                   <p className="text-[11px] text-muted-foreground">

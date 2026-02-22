@@ -20,6 +20,7 @@ import {
 } from "./db";
 import { invokeLLM } from "./_core/llm";
 import { formulaImportRouter } from "./formulaImport";
+import { derivedFormulaRouter } from "./derivedFormula";
 
 export const appRouter = router({
   system: systemRouter,
@@ -772,6 +773,8 @@ Return ONLY the JSON object, no markdown fencing.`;
   }),
 
   formulaImport: formulaImportRouter,
+
+  derived: derivedFormulaRouter,
 
   substitution: router({
     suggest: protectedProcedure

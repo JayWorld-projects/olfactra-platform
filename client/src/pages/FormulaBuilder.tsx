@@ -17,7 +17,7 @@ import { LONGEVITY_LABELS, LONGEVITY_COLORS, CATEGORY_COLORS } from "@shared/per
 import {
   ArrowLeft, Plus, Trash2, Scale, Download, Loader2, FlaskConical,
   AlertTriangle, Save, Copy, Tag, StickyNote, X, Check, Pencil, DollarSign, TrendingUp, BarChart3, Info,
-  History, RotateCcw, ArrowRightLeft, Sparkles, ChevronDown, ChevronUp, LockKeyhole, RefreshCw,
+  History, RotateCcw, ArrowRightLeft, Sparkles, ChevronDown, ChevronUp, LockKeyhole, RefreshCw, Beaker,
 } from "lucide-react";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
@@ -28,6 +28,7 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import DerivedFormulaDialog from "@/components/DerivedFormulaDialog";
 
 export default function FormulaBuilder() {
   const { loading } = useAuth();
@@ -98,8 +99,10 @@ function BuilderContent() {
   const [compareVersions, setCompareVersions] = useState<[number | null, number | null]>([null, null]);
   const [showSubstitution, setShowSubstitution] = useState<{ ingredientId: number; ingredientName: string; fiId: number } | null>(null);
   const [substitutionBasis, setSubstitutionBasis] = useState<"as-dosed" | "neat-active">("neat-active");
+  const [showDerived, setShowDerived] = useState(false);
 
   const { activeWorkspaceId } = useWorkspace();
+
   const { data: formula, isLoading } = trpc.formula.get.useQuery({ id: formulaId });
   const { data: allIngredients } = trpc.ingredient.list.useQuery({});
   const { data: workspaceData } = trpc.workspace.get.useQuery(
@@ -572,6 +575,9 @@ ${[0,1,2,3,4,5].map(level => {
           <Button variant="outline" size="sm" onClick={() => setShowExport(true)} className="border-border/50">
             <Download className="size-3.5" /> Export
           </Button>
+          <Button variant="outline" size="sm" onClick={() => setShowDerived(true)} className="border-accent/50 text-accent hover:bg-accent/10">
+            <Beaker className="size-3.5" /> Product Version
+          </Button>
           <Button
             variant="outline" size="sm"
             className={formula.status === "draft" ? "border-accent/50 text-accent hover:bg-accent/10" : "border-border/50"}
@@ -587,6 +593,11 @@ ${[0,1,2,3,4,5].map(level => {
           </Button>
         </div>
       </div>
+
+      {/* Derived Formula Info Banner */}
+      {formula.parentFormulaId && (
+        <DerivedInfoBanner formulaId={formulaId} parentFormulaId={formula.parentFormulaId} formula={formula} />
+      )}
 
       {/* IFRA Warnings */}
       {ifraWarnings.length > 0 && (
@@ -1552,6 +1563,14 @@ ${[0,1,2,3,4,5].map(level => {
         </DialogContent>
       </Dialog>
 
+      {/* Derived Formula Dialog */}
+      <DerivedFormulaDialog
+        open={showDerived}
+        onOpenChange={setShowDerived}
+        formulaId={formulaId}
+        formulaName={formula.name}
+      />
+
       {/* Delete Confirmation */}
       <AlertDialog open={showDelete} onOpenChange={setShowDelete}>
         <AlertDialogContent className="bg-card border-border/50">
@@ -1568,5 +1587,53 @@ ${[0,1,2,3,4,5].map(level => {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+/* ─── Derived Formula Info Banner ─── */
+function DerivedInfoBanner({ formulaId, parentFormulaId, formula }: { formulaId: number; parentFormulaId: number; formula: any }) {
+  const [, setLocation] = useLocation();
+  const { data: parentInfo } = trpc.derived.getParent.useQuery({ parentFormulaId });
+
+  return (
+    <Card className="border-violet-500/30 bg-violet-500/5">
+      <CardContent className="pt-3 pb-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Beaker className="size-4 text-violet-400" />
+          <span className="text-sm font-medium text-violet-300">Derived Formula</span>
+          {formula.productType && (
+            <Badge variant="outline" className="text-[10px] border-violet-500/40 text-violet-400">
+              {formula.productType}
+            </Badge>
+          )}
+          {formula.fragranceLoadPercent && (
+            <Badge variant="outline" className="text-[10px] border-violet-500/40 text-violet-400">
+              {formula.fragranceLoadPercent}% load
+            </Badge>
+          )}
+          <span className="text-xs text-muted-foreground">from</span>
+          {parentInfo ? (
+            <button
+              className="text-xs text-accent hover:underline font-medium"
+              onClick={() => setLocation(`/formulas/${parentInfo.id}`)}
+            >
+              {parentInfo.name}
+            </button>
+          ) : (
+            <span className="text-xs text-muted-foreground italic">Parent formula</span>
+          )}
+        </div>
+        {formula.mixingProcedure && (
+          <details className="mt-2">
+            <summary className="text-xs text-violet-400/80 cursor-pointer hover:text-violet-300 transition-colors">
+              View Mixing Procedure
+            </summary>
+            <pre className="mt-2 text-xs text-foreground/80 whitespace-pre-wrap leading-relaxed bg-secondary/20 rounded-md p-3 border border-border/20">
+              {formula.mixingProcedure}
+            </pre>
+          </details>
+        )}
+      </CardContent>
+    </Card>
   );
 }

@@ -113,7 +113,7 @@
 - [x] Feature: Auto-snapshot on Manual Save action (Save button added to formula header)
 - [x] Feature: Auto-snapshot on Scale Formula (added with scale method and value in label)
 - [x] Feature: Auto-snapshot on Import Formula (Upgrade Prompt 2 — wired in formulaImport.saveImportedFormula)
-- [ ] Feature: Placeholder for auto-snapshot on Generate Product Version (Upgrade Prompt 3 — will wire when implemented)
+- [x] Feature: Auto-snapshot on Generate Product Version (Upgrade Prompt 3 — wired in derivedFormula.saveDerivedFormula)
 - [x] Verify: Snapshot payload confirmed — includes formula id, version number, timestamp, action type label, and full ingredient table (name, category, weight, dilution %, solvent, total weight)
 
 ## UPGRADE 2: FORMULA IMPORT, ANALYSIS, MATCHING, AND SUBSTITUTION
@@ -147,3 +147,27 @@
 - [x] Feature: Switching basis and regenerating produces different ranking/impact explanations
 - [x] Feature: Toggle does NOT change formula values — only affects substitution ranking and impact notes
 - [x] Tests: Server-side tests for basis-aware substitution procedures (4 new tests, all passing)
+
+## UPGRADE 3: DERIVED PRODUCT FORMULAS
+
+- [x] Schema: Add parentFormulaId, productType, fragranceLoadPercent, batchSize, batchSizeUnit, mixingProcedure to formulas table
+- [x] Schema: Push migrations for new nullable fields
+- [x] Server: Calculation logic (fragrance_mass, carrier_mass, ingredient scaling, carrier selection by product type)
+- [x] Server: Density conversion assumptions for unit handling (ml→g for ethanol, carrier oil, etc.)
+- [x] Server: AI-generated step-by-step mixing procedure per product type
+- [x] Server: Save derived formula with status "Derived" and all metadata (parentFormulaId, productType, fragranceLoadPercent, batchSize, batchSizeUnit, mixingProcedure)
+- [x] Server: Auto-snapshot on derived formula creation
+- [x] Server: Warning when deleting a parent formula that has derived children (no cascade delete)
+- [x] UI: "Generate Product Version" button in Formula Builder header toolbar
+- [x] UI: Multi-step dialog (Product Type → Batch Size → Fragrance Load → Preview & Save)
+- [x] UI: Product type selection with recommended fragrance load defaults
+- [x] UI: Batch size input with unit selection (ml, g, oz, kg)
+- [x] UI: Fragrance load % input with recommended range per product type
+- [x] UI: Full formula preview with fragrance ingredients, carrier components, total batch confirmation
+- [x] UI: Mixing procedure display in preview
+- [x] UI: "Derived" badge on formula list for derived formulas
+- [x] UI: Parent formula link on derived formulas (clickable back-link)
+- [x] UI: "Has derivatives" indicator on parent formulas in list
+- [x] UI: Info banner on derived Formula Builder view ("Derived from [Parent Name]")
+- [x] UI: Mixing Procedure section in derived formula view
+- [x] Tests: Server-side tests for derived formula calculation and saving procedures (18 tests, all passing)

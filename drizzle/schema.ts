@@ -47,6 +47,12 @@ export const formulas = mysqlTable("formulas", {
   sourceType: varchar("sourceType", { length: 20 }),
   importedAt: timestamp("importedAt"),
   originalData: text("originalData"),
+  parentFormulaId: int("parentFormulaId"),
+  productType: varchar("productType", { length: 50 }),
+  fragranceLoadPercent: decimal("fragranceLoadPercent", { precision: 6, scale: 2 }),
+  batchSize: decimal("batchSize", { precision: 12, scale: 3 }),
+  batchSizeUnit: varchar("batchSizeUnit", { length: 10 }),
+  mixingProcedure: text("mixingProcedure"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
