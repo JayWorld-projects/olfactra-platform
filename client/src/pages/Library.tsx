@@ -12,6 +12,7 @@ import { useNavItems } from "./Home";
 import { trpc } from "@/lib/trpc";
 import { LONGEVITY_LABELS } from "@shared/perfumery";
 import { BookOpen, Plus, Search, X, Star, Package, Check, Undo2, Layers } from "lucide-react";
+import { LibrarySkeleton } from "@/components/LibrarySkeleton";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useState, useMemo, useCallback } from "react";
 import { useLocation } from "wouter";
@@ -270,17 +271,7 @@ function LibraryContent() {
 
       {/* Grid */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="animate-pulse bg-card border-border/50">
-              <CardContent className="pt-4 space-y-3">
-                <div className="h-5 bg-secondary rounded w-3/4" />
-                <div className="h-4 bg-secondary rounded w-1/2" />
-                <div className="h-3 bg-secondary rounded w-full" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <LibrarySkeleton />
       ) : filtered.length === 0 ? (
         <Card className="py-16 bg-card border-border/50">
           <CardContent className="flex flex-col items-center gap-3 text-center">

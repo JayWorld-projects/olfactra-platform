@@ -199,3 +199,12 @@
 - [x] Skeleton: Calm, non-distracting appearance (no flashy shimmer)
 - [x] Verify: No new wording, behaviors, or controls introduced
 - [x] Verify: All changes compatible with v1.0 manual
+
+## UI REFINEMENT v1.4: LIBRARY/IMPORT SKELETONS & COMPARISON STYLING
+
+- [x] Skeleton: Library page loading skeleton with layout-matched placeholders
+- [x] Skeleton: Import page loading skeleton (component created, Import uses DashboardLayoutSkeleton for auth)
+- [x] Skeleton: Same calm pulse animation as Formula Builder skeleton
+- [x] Comparison: Align spacing, table styling, and card hierarchy with v1.1–v1.3 aesthetics
+- [x] Verify: No new logic, controls, metrics, or terminology
+- [x] Verify: All changes compatible with v1.0 manual
