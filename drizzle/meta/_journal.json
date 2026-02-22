@@ -57,6 +57,13 @@
       "when": 1771741222409,
       "tag": "0008_blue_omega_sentinel",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1771753770737,
+      "tag": "0009_smart_captain_midlands",
+      "breakpoints": true
     }
   ]
 }
