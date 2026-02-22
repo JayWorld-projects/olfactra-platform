@@ -297,14 +297,14 @@ function LibraryContent() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(ingredient => (
             <Card
               key={ingredient.id}
-              className={`group hover:border-primary/40 transition-all bg-card border-border/50 ${batchMode ? "" : "cursor-pointer"}`}
+              className={`group hover:border-primary/40 hover:shadow-sm transition-all bg-card border-border/50 ${batchMode ? "" : "cursor-pointer"}`}
               onClick={() => !batchMode && setLocation(`/library/${ingredient.id}`)}
             >
-              <CardContent className="pt-4 pb-4 space-y-2.5">
+              <CardContent className="pt-4 pb-4 space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="font-semibold text-sm leading-tight line-clamp-2 text-foreground group-hover:text-primary transition-colors">{ingredient.name}</h3>
                   <div className="flex items-center gap-1 shrink-0">
@@ -318,16 +318,16 @@ function LibraryContent() {
                       </button>
                     )}
                     {ingredient.category && (
-                      <Badge variant="secondary" className="text-[11px] bg-secondary text-secondary-foreground border-0">
+                      <Badge variant="secondary" className="text-xs bg-secondary text-secondary-foreground border-0">
                         {ingredient.category}
                       </Badge>
                     )}
                   </div>
                 </div>
                 {ingredient.casNumber && (
-                  <p className="text-xs text-muted-foreground truncate font-mono">{ingredient.casNumber}</p>
+                  <p className="text-xs text-muted-foreground truncate font-mono tracking-wide">{ingredient.casNumber}</p>
                 )}
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
                   {ingredient.supplier && <span>Supplier: {ingredient.supplier}</span>}
                   {batchMode ? (
                     <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
@@ -356,12 +356,12 @@ function LibraryContent() {
                 </div>
                 <div className="flex items-center gap-2">
                   {ingredient.longevity != null && (
-                    <Badge variant="outline" className="text-[11px] border-primary/30 text-primary">
+                    <Badge variant="outline" className="text-xs border-primary/30 text-primary">
                       {LONGEVITY_LABELS[ingredient.longevity] || `Level ${ingredient.longevity}`}
                     </Badge>
                   )}
                   {ingredient.ifraLimit && (
-                    <span className="text-[11px] text-muted-foreground">IFRA: {ingredient.ifraLimit}%</span>
+                    <span className="text-xs text-muted-foreground">IFRA: {ingredient.ifraLimit}%</span>
                   )}
                 </div>
               </CardContent>

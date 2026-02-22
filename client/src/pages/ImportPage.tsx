@@ -672,12 +672,12 @@ function FormulaImportWizard() {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border/50">
-                      <TableHead className="sticky top-0 bg-card z-10 text-muted-foreground">#</TableHead>
-                      <TableHead className="sticky top-0 bg-card z-10 text-muted-foreground">Ingredient Name</TableHead>
-                      <TableHead className="sticky top-0 bg-card z-10 text-muted-foreground">Weight (g)</TableHead>
-                      <TableHead className="sticky top-0 bg-card z-10 text-muted-foreground">%</TableHead>
-                      <TableHead className="sticky top-0 bg-card z-10 text-muted-foreground">Dilution %</TableHead>
-                      <TableHead className="sticky top-0 bg-card z-10 text-muted-foreground">Notes</TableHead>
+                      <TableHead className="sticky top-0 bg-card z-10 text-muted-foreground text-xs font-semibold uppercase tracking-wider">#</TableHead>
+                      <TableHead className="sticky top-0 bg-card z-10 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Ingredient</TableHead>
+                      <TableHead className="sticky top-0 bg-card z-10 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Weight (g)</TableHead>
+                      <TableHead className="sticky top-0 bg-card z-10 text-muted-foreground text-xs font-semibold uppercase tracking-wider">%</TableHead>
+                      <TableHead className="sticky top-0 bg-card z-10 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Dilution %</TableHead>
+                      <TableHead className="sticky top-0 bg-card z-10 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Notes</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -826,13 +826,13 @@ function FormulaImportWizard() {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border/50">
-                      <TableHead className="text-muted-foreground">#</TableHead>
-                      <TableHead className="text-muted-foreground">Original Name</TableHead>
-                      <TableHead className="text-muted-foreground">Weight</TableHead>
-                      <TableHead className="text-muted-foreground">Status</TableHead>
-                      <TableHead className="text-muted-foreground">Matched To</TableHead>
-                      <TableHead className="text-muted-foreground">Confidence</TableHead>
-                      <TableHead className="text-muted-foreground">Actions</TableHead>
+                      <TableHead className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">#</TableHead>
+                      <TableHead className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Original Name</TableHead>
+                      <TableHead className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Weight</TableHead>
+                      <TableHead className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Status</TableHead>
+                      <TableHead className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Matched To</TableHead>
+                      <TableHead className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Confidence</TableHead>
+                      <TableHead className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -990,11 +990,11 @@ function FormulaImportWizard() {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border/50">
-                      <TableHead className="text-muted-foreground">#</TableHead>
-                      <TableHead className="text-muted-foreground">Original Name</TableHead>
-                      <TableHead className="text-muted-foreground">Mapped To</TableHead>
-                      <TableHead className="text-muted-foreground">Weight</TableHead>
-                      <TableHead className="text-muted-foreground">Match Type</TableHead>
+                      <TableHead className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">#</TableHead>
+                      <TableHead className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Original Name</TableHead>
+                      <TableHead className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Mapped To</TableHead>
+                      <TableHead className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Weight</TableHead>
+                      <TableHead className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Match Type</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1373,7 +1373,7 @@ function LibraryImportSection() {
                 <TableHeader>
                   <TableRow className="border-border/50">
                     {["#", "Name", "CAS", "Supplier", "Category", "Stock", "$/g", "IFRA", "Long."].map(h => (
-                      <TableHead key={h} className="sticky top-0 bg-card text-muted-foreground z-10">{h}</TableHead>
+                      <TableHead key={h} className="sticky top-0 bg-card text-muted-foreground text-xs font-semibold uppercase tracking-wider z-10">{h}</TableHead>
                     ))}
                   </TableRow>
                 </TableHeader>

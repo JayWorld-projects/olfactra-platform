@@ -171,3 +171,11 @@
 - [x] UI: Info banner on derived Formula Builder view ("Derived from [Parent Name]")
 - [x] UI: Mixing Procedure section in derived formula view
 - [x] Tests: Server-side tests for derived formula calculation and saving procedures (18 tests, all passing)
+
+## UI REFINEMENT v1.1: VISUAL STYLING
+
+- [x] Typography: Adjust font weights, sizes, line heights, heading hierarchy for readability
+- [x] Color: Refine semantic color tokens, improve contrast, align with Olfactra brand (calm, precise, professional)
+- [x] Tables: Improve spacing, alignment, and density in Formula Builder, Library, and Import pages
+- [x] Toggles: Improve visual clarity of calculated vs editable fields
+- [x] Verify: All changes compatible with v1.0 manual (no workflow, logic, or behavior changes)

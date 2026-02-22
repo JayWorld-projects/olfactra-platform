@@ -174,7 +174,7 @@ function FormulaListContent() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {formulas.map(formula => {
             const isSelected = compareSelection.includes(formula.id);
             return (
@@ -183,7 +183,7 @@ function FormulaListContent() {
                 className={`cursor-pointer group transition-all bg-card border-border/50 ${
                   compareMode && isSelected
                     ? "border-accent ring-1 ring-accent/40"
-                    : "hover:border-primary/40"
+                    : "hover:border-primary/40 hover:shadow-sm"
                 }`}
                 onClick={() => {
                   if (compareMode) {
@@ -193,7 +193,7 @@ function FormulaListContent() {
                   }
                 }}
               >
-                <CardContent className="pt-4 pb-4 space-y-2.5">
+                <CardContent className="pt-4 pb-4 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">
                       {compareMode && (
@@ -218,18 +218,18 @@ function FormulaListContent() {
                         </Button>
                       )}
                       {(formula as any).parentFormulaId && (
-                        <Badge variant="outline" className="text-[10px] border-violet-500/50 text-violet-400 gap-0.5">
-                          <Beaker className="size-2.5" /> Derived
+                        <Badge variant="outline" className="text-xs border-violet-500/50 text-violet-400 gap-0.5">
+                          <Beaker className="size-3" /> Derived
                         </Badge>
                       )}
                       {formulas.some(f => (f as any).parentFormulaId === formula.id) && (
-                        <Badge variant="outline" className="text-[10px] border-emerald-500/50 text-emerald-400 gap-0.5">
-                          <GitBranch className="size-2.5" /> Has derivatives
+                        <Badge variant="outline" className="text-xs border-emerald-500/50 text-emerald-400 gap-0.5">
+                          <GitBranch className="size-3" /> Has derivatives
                         </Badge>
                       )}
                       <Badge
                         variant={formula.status === "final" ? "default" : "secondary"}
-                        className={`text-[11px] ${formula.status === "final" ? "bg-accent text-accent-foreground" : "bg-secondary text-secondary-foreground"}`}
+                        className={`text-xs ${formula.status === "final" ? "bg-accent text-accent-foreground" : "bg-secondary text-secondary-foreground"}`}
                       >
                         {formula.status}
                       </Badge>
@@ -250,7 +250,7 @@ function FormulaListContent() {
                       <span className="text-violet-400/70">{(formula as any).fragranceLoadPercent}% load</span>
                     )}
                   </div>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Updated {new Date(formula.updatedAt).toLocaleDateString()}
                   </p>
                 </CardContent>

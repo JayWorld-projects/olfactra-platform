@@ -114,13 +114,13 @@ function DashboardContent() {
         {statCards.map(card => (
           <Card
             key={card.label}
-            className="cursor-pointer group hover:border-primary/40 transition-all bg-card border-border/50"
+            className="cursor-pointer group hover:border-primary/40 hover:shadow-sm transition-all bg-card border-border/50"
             onClick={() => setLocation(card.href)}
           >
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">{card.label}</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">{card.label}</p>
                   <p className="text-3xl font-bold text-foreground mt-1">{card.value}</p>
                   <p className="text-xs text-muted-foreground mt-1">{card.sub}</p>
                 </div>
@@ -208,7 +208,7 @@ function DashboardContent() {
                     <div className="w-full rounded-t-md overflow-hidden" style={{ height: `${Math.max(height, 6)}%` }}>
                       <div className="w-full h-full bg-gradient-to-t from-primary/80 to-primary/40 rounded-t-md" />
                     </div>
-                    <span className="text-[11px] text-muted-foreground text-center leading-tight">{labels[level]}</span>
+                    <span className="text-xs text-muted-foreground text-center leading-tight">{labels[level]}</span>
                   </div>
                 );
               })}

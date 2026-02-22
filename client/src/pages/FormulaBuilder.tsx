@@ -68,7 +68,7 @@ function EditableNumberCell({ value, onSave, step = "0.001", min = "0", max, cla
       onChange={e => setLocal(e.target.value)}
       onBlur={commit}
       onKeyDown={e => { if (e.key === "Enter") { e.currentTarget.blur(); } }}
-      className={className}
+      className={`editable-field ${className}`}
     />
   );
 }
@@ -626,21 +626,21 @@ ${[0,1,2,3,4,5].map(level => {
         ].map(stat => (
           <Card key={stat.label} className="bg-card border-border/50">
             <CardContent className="pt-3 pb-3">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">{stat.label}</p>
               <p className={`text-lg font-semibold tabular-nums ${stat.accent ? "text-accent" : "text-foreground"}`}>{stat.value}</p>
             </CardContent>
           </Card>
         ))}
         <Card className="bg-card border-border/50">
           <CardContent className="pt-3 pb-3">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Solvent</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Solvent</p>
             <div className="flex items-center gap-1.5">
               <EditableNumberCell
                 value={String(solventWeight || "0")}
                 onSave={(val) => {
                   updateFormulaMutation.mutate({ id: formulaId, solventWeight: val, totalWeight: (concentrateWeight + parseFloat(val || "0")).toFixed(3) });
                 }}
-                className="h-7 text-sm w-20 bg-background border-border/50 tabular-nums"
+                className="h-7 text-sm w-20 tabular-nums"
               />
               <span className="text-xs text-muted-foreground">g</span>
             </div>
@@ -674,9 +674,9 @@ ${[0,1,2,3,4,5].map(level => {
                     value={universalDilutionInput}
                     onChange={(e) => setUniversalDilutionInput(e.target.value)}
                     placeholder="e.g., 50"
-                    className="h-8 px-2 text-sm border border-border/50 rounded bg-background focus:outline-none focus:ring-1 focus:ring-primary w-24 tabular-nums"
+                    className="h-8 px-2 text-sm editable-field focus:outline-none focus:ring-1 focus:ring-primary w-24 tabular-nums"
                   />
-                  <p className="text-[10px] text-muted-foreground mt-1">Apply to all ingredients</p>
+                  <p className="text-xs text-muted-foreground mt-1">Apply to all ingredients</p>
                 </div>
                 <Button
                   size="sm"
@@ -725,12 +725,12 @@ ${[0,1,2,3,4,5].map(level => {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-border/50">
-                        <TableHead className="text-muted-foreground">Ingredient</TableHead>
-                        <TableHead className="text-muted-foreground">Category</TableHead>
-                        <TableHead className="text-right w-28 text-muted-foreground">Weight (g)</TableHead>
-                        <TableHead className="text-right w-24 text-muted-foreground">Dilution %</TableHead>
-                        <TableHead className="text-right w-20 text-muted-foreground">% of Total</TableHead>
-                        <TableHead className="text-right w-20 text-muted-foreground">Cost</TableHead>
+                        <TableHead className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Ingredient</TableHead>
+                        <TableHead className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Category</TableHead>
+                        <TableHead className="text-right w-28 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Weight (g)</TableHead>
+                        <TableHead className="text-right w-24 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Dilution %</TableHead>
+                        <TableHead className="text-right w-20 text-muted-foreground text-xs font-semibold uppercase tracking-wider">% of Total</TableHead>
+                        <TableHead className="text-right w-20 text-muted-foreground text-xs font-semibold uppercase tracking-wider">Cost</TableHead>
                         <TableHead className="w-10"></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -743,7 +743,7 @@ ${[0,1,2,3,4,5].map(level => {
                         const pct = basis > 0 ? ((showNeatView ? neatW : w) / basis) * 100 : 0;
                         const cost = w * parseFloat(fi.ingredient?.costPerGram || "0");
                         return (
-                          <TableRow key={fi.id} className="border-border/30">
+                          <TableRow key={fi.id} className="border-border/30 hover:bg-secondary/30 transition-colors">
                             <TableCell>
                               <span className="font-medium text-sm text-foreground">{fi.ingredient?.name || "Unknown"}</span>
                               {fi.ingredient?.longevity != null && (
@@ -758,7 +758,7 @@ ${[0,1,2,3,4,5].map(level => {
                                 value={fi.weight}
                                 onSave={(val) => handleWeightSave(fi.id, val)}
                                 step="0.001" min="0"
-                                className="h-7 text-sm text-right w-24 ml-auto bg-background border-border/50 tabular-nums"
+                                className="h-7 text-sm text-right w-24 ml-auto tabular-nums"
                               />
                             </TableCell>
                             <TableCell className="text-right">
@@ -766,10 +766,10 @@ ${[0,1,2,3,4,5].map(level => {
                                 value={fi.dilutionPercent || "100"}
                                 onSave={(val) => handleDilutionSave(fi.id, val)}
                                 step="1" min="1" max="100"
-                                className="h-7 text-sm text-right w-20 ml-auto bg-background border-border/50 tabular-nums"
+                                className="h-7 text-sm text-right w-20 ml-auto tabular-nums"
                               />
                             </TableCell>
-                            <TableCell className="text-right text-sm tabular-nums">{pct.toFixed(2)}%</TableCell>
+                            <TableCell className="text-right text-sm tabular-nums text-muted-foreground">{pct.toFixed(2)}%</TableCell>
                             <TableCell className="text-right text-sm tabular-nums text-accent">${cost.toFixed(2)}</TableCell>
                             <TableCell>
                               <div className="flex items-center gap-0.5">
@@ -1080,12 +1080,12 @@ ${[0,1,2,3,4,5].map(level => {
                     <Table>
                       <TableHeader>
                         <TableRow className="border-border/50">
-                          <TableHead className="text-muted-foreground">Ingredient</TableHead>
-                          <TableHead className="text-muted-foreground">Category</TableHead>
-                          <TableHead className="text-right text-muted-foreground">Weight (g)</TableHead>
-                          <TableHead className="text-right text-muted-foreground">$/gram</TableHead>
-                          <TableHead className="text-right text-muted-foreground">Cost</TableHead>
-                          <TableHead className="text-right text-muted-foreground">% of Total</TableHead>
+                          <TableHead className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Ingredient</TableHead>
+                          <TableHead className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Category</TableHead>
+                          <TableHead className="text-right text-muted-foreground text-xs font-semibold uppercase tracking-wider">Weight (g)</TableHead>
+                          <TableHead className="text-right text-muted-foreground text-xs font-semibold uppercase tracking-wider">$/gram</TableHead>
+                          <TableHead className="text-right text-muted-foreground text-xs font-semibold uppercase tracking-wider">Cost</TableHead>
+                          <TableHead className="text-right text-muted-foreground text-xs font-semibold uppercase tracking-wider">% of Total</TableHead>
                           <TableHead className="w-40"></TableHead>
                         </TableRow>
                       </TableHeader>
@@ -1094,7 +1094,7 @@ ${[0,1,2,3,4,5].map(level => {
                           const pctOfCost = totalCost > 0 ? (item.totalCost / totalCost) * 100 : 0;
                           const barWidth = costBreakdownData.maxItemCost > 0 ? (item.totalCost / costBreakdownData.maxItemCost) * 100 : 0;
                           return (
-                            <TableRow key={item.id} className="border-border/30">
+                            <TableRow key={item.id} className="border-border/30 hover:bg-secondary/30 transition-colors">
                               <TableCell>
                                 <span className="font-medium text-sm text-foreground">{item.name}</span>
                               </TableCell>
@@ -1224,19 +1224,19 @@ ${[0,1,2,3,4,5].map(level => {
                                   <Table>
                                     <TableHeader>
                                       <TableRow className="border-border/30">
-                                        <TableHead className="text-xs text-muted-foreground">Ingredient</TableHead>
-                                        <TableHead className="text-xs text-muted-foreground">Category</TableHead>
-                                        <TableHead className="text-right text-xs text-muted-foreground">Weight (g)</TableHead>
-                                        <TableHead className="text-right text-xs text-muted-foreground">Dilution %</TableHead>
+                                        <TableHead className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Ingredient</TableHead>
+                                        <TableHead className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Category</TableHead>
+                                        <TableHead className="text-right text-xs text-muted-foreground font-semibold uppercase tracking-wider">Weight (g)</TableHead>
+                                        <TableHead className="text-right text-xs text-muted-foreground font-semibold uppercase tracking-wider">Dilution %</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                       {(snapshot.ingredients || []).map((ing: any, idx: number) => (
                                         <TableRow key={idx} className="border-border/20">
-                                          <TableCell className="text-xs font-medium py-1.5">{ing.ingredientName}</TableCell>
-                                          <TableCell className="text-xs text-muted-foreground py-1.5">{ing.category || "—"}</TableCell>
-                                          <TableCell className="text-right text-xs tabular-nums py-1.5">{parseFloat(ing.weight || "0").toFixed(3)}</TableCell>
-                                          <TableCell className="text-right text-xs tabular-nums py-1.5">{ing.dilutionPercent || "100"}%</TableCell>
+                                          <TableCell className="text-xs font-medium py-2">{ing.ingredientName}</TableCell>
+                                          <TableCell className="text-xs text-muted-foreground py-2">{ing.category || "—"}</TableCell>
+                                          <TableCell className="text-right text-xs tabular-nums py-2">{parseFloat(ing.weight || "0").toFixed(3)}</TableCell>
+                                          <TableCell className="text-right text-xs tabular-nums py-2">{ing.dilutionPercent || "100"}%</TableCell>
                                         </TableRow>
                                       ))}
                                     </TableBody>
