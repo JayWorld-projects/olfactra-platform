@@ -16,7 +16,7 @@ import { LONGEVITY_LABELS, CATEGORY_COLORS, PYRAMID_POSITIONS } from "@shared/pe
 import {
   ArrowLeft, Edit, Trash2, Sparkles, Loader2, Star, Copy,
   Clock, CalendarDays, FileText, Bot, LockKeyhole, Save, Triangle,
-  Plus, Droplets, X,
+  Plus, Droplets, X, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useLocation, useParams } from "wouter";
@@ -100,6 +100,8 @@ function DetailContent() {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [showAddDilution, setShowAddDilution] = useState(false);
   const [newDilution, setNewDilution] = useState({ percentage: "", solvent: "Ethanol", notes: "" });
+  const [manualNotesExpanded, setManualNotesExpanded] = useState(false);
+  const [aiNotesExpanded, setAiNotesExpanded] = useState(false);
 
   const { data: ingredient, isLoading } = trpc.ingredient.get.useQuery({ id: ingredientId });
   const { data: usage } = trpc.ingredient.usage.useQuery({ id: ingredientId });
@@ -362,16 +364,27 @@ function DetailContent() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
-              {/* Manual Notes */}
+              {/* Manual Notes — Collapsible */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-foreground">Manual Notes</span>
+                  <button
+                    onClick={() => !isEditingNotes && ingredient.manualNotes && setManualNotesExpanded(p => !p)}
+                    className="text-sm font-medium text-foreground flex items-center gap-1.5 hover:text-primary transition-colors"
+                  >
+                    Manual Notes
+                    {ingredient.manualNotes && !isEditingNotes && (
+                      manualNotesExpanded
+                        ? <ChevronUp className="size-3.5 text-muted-foreground" />
+                        : <ChevronDown className="size-3.5 text-muted-foreground" />
+                    )}
+                  </button>
                   {!isEditingNotes ? (
                     <Button
                       variant="ghost" size="sm"
                       onClick={() => {
                         setManualNotesText(ingredient.manualNotes || "");
                         setIsEditingNotes(true);
+                        setManualNotesExpanded(true);
                       }}
                       className="h-7 text-xs"
                     >
@@ -406,10 +419,24 @@ function DetailContent() {
                     className="min-h-[120px] bg-background border-border/50 text-sm"
                   />
                 ) : ingredient.manualNotes ? (
-                  <div className="rounded-lg border border-border/30 bg-secondary/30 p-3">
-                    <div className="prose prose-sm max-w-none text-sm">
-                      <Streamdown>{ingredient.manualNotes}</Streamdown>
-                    </div>
+                  <div>
+                    {!manualNotesExpanded ? (
+                      <button
+                        onClick={() => setManualNotesExpanded(true)}
+                        className="w-full text-left rounded-lg border border-border/30 bg-secondary/30 p-3 hover:bg-secondary/50 transition-colors cursor-pointer"
+                      >
+                        <div className="text-sm text-muted-foreground line-clamp-2">
+                          {ingredient.manualNotes.replace(/[#*_`>\-]/g, "").slice(0, 150)}{ingredient.manualNotes.length > 150 ? "..." : ""}
+                        </div>
+                        <span className="text-xs text-primary mt-1 inline-block">Click to expand</span>
+                      </button>
+                    ) : (
+                      <div className="rounded-lg border border-border/30 bg-secondary/30 p-3">
+                        <div className="prose prose-sm max-w-none text-sm">
+                          <Streamdown>{ingredient.manualNotes}</Streamdown>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground italic">No manual notes yet. Click Edit to add notes.</p>
@@ -423,13 +450,21 @@ function DetailContent() {
 
               <Separator className="bg-border/30" />
 
-              {/* AI Notes */}
+              {/* AI Notes — Collapsible */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                  <button
+                    onClick={() => ingredient.aiNotes && setAiNotesExpanded(p => !p)}
+                    className="text-sm font-medium text-foreground flex items-center gap-1.5 hover:text-primary transition-colors"
+                  >
                     <Bot className="size-3.5 text-accent" /> AI Generated Notes
                     <LockKeyhole className="size-3 text-muted-foreground" />
-                  </span>
+                    {ingredient.aiNotes && (
+                      aiNotesExpanded
+                        ? <ChevronUp className="size-3.5 text-muted-foreground" />
+                        : <ChevronDown className="size-3.5 text-muted-foreground" />
+                    )}
+                  </button>
                   <div className="flex gap-1.5">
                     {ingredient.aiNotes && (
                       <Button
@@ -444,11 +479,14 @@ function DetailContent() {
                     )}
                     <Button
                       variant="outline" size="sm"
-                      onClick={() => generateAiNotesMutation.mutate({
-                        id: ingredientId,
-                        ingredientName: ingredient.name,
-                        casNumber: ingredient.casNumber || undefined,
-                      })}
+                      onClick={() => {
+                        generateAiNotesMutation.mutate({
+                          id: ingredientId,
+                          ingredientName: ingredient.name,
+                          casNumber: ingredient.casNumber || undefined,
+                        });
+                        setAiNotesExpanded(true);
+                      }}
                       disabled={generateAiNotesMutation.isPending}
                       className="h-7 text-xs border-accent/30 text-accent hover:bg-accent/10"
                     >
@@ -461,10 +499,24 @@ function DetailContent() {
                   </div>
                 </div>
                 {ingredient.aiNotes ? (
-                  <div className="rounded-lg border border-accent/20 bg-accent/5 p-3">
-                    <div className="prose prose-sm max-w-none text-sm">
-                      <Streamdown>{ingredient.aiNotes}</Streamdown>
-                    </div>
+                  <div>
+                    {!aiNotesExpanded ? (
+                      <button
+                        onClick={() => setAiNotesExpanded(true)}
+                        className="w-full text-left rounded-lg border border-accent/20 bg-accent/5 p-3 hover:bg-accent/10 transition-colors cursor-pointer"
+                      >
+                        <div className="text-sm text-muted-foreground line-clamp-2">
+                          {ingredient.aiNotes.replace(/[#*_`>\-]/g, "").slice(0, 150)}{ingredient.aiNotes.length > 150 ? "..." : ""}
+                        </div>
+                        <span className="text-xs text-primary mt-1 inline-block">Click to expand</span>
+                      </button>
+                    ) : (
+                      <div className="rounded-lg border border-accent/20 bg-accent/5 p-3">
+                        <div className="prose prose-sm max-w-none text-sm">
+                          <Streamdown>{ingredient.aiNotes}</Streamdown>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground italic">

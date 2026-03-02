@@ -318,3 +318,9 @@
 - [x] Tests: Dilution CRUD operations (3 tests passing)
 - [x] Verify: All existing tests still pass (62 total across 5 files)
 - [x] Verify: Server compiles cleanly (TypeScript: No errors, LSP: No errors)
+
+## UX: COLLAPSIBLE NOTES SECTIONS
+- [x] UI: Manual Notes section collapsible with expand/minimize toggle
+- [x] UI: AI Generated Notes section collapsible with expand/minimize toggle
+- [x] UI: Default state — collapsed showing 2-line preview; expanded when editing or clicking
+- [x] UI: Hover transitions on expand/collapse with chevron indicators
