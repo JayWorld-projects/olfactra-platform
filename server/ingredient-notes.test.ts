@@ -35,6 +35,7 @@ const mockIngredient = {
 
 let storedIngredient = { ...mockIngredient };
 let lastUpdateData: Record<string, unknown> = {};
+let mockDilutions: Array<{ id: number; ingredientId: number; userId: number; percentage: string; solvent: string; notes: string | null; dateCreated: Date }> = [];
 
 vi.mock("./db", () => ({
   getIngredient: vi.fn(async (id: number, userId: number) => {
@@ -94,6 +95,10 @@ vi.mock("./db", () => ({
   getFormulaVersion: vi.fn(async () => undefined),
   revertFormulaToVersion: vi.fn(async () => {}),
   deleteFormulaVersion: vi.fn(async () => {}),
+  listIngredientDilutions: vi.fn(async () => mockDilutions),
+  addIngredientDilution: vi.fn(async () => 99),
+  updateIngredientDilution: vi.fn(async () => {}),
+  deleteIngredientDilution: vi.fn(async () => {}),
 }));
 
 vi.mock("./_core/llm", () => ({
@@ -236,6 +241,101 @@ describe("ingredient.copyAiToManualNotes", () => {
     const caller = appRouter.createCaller(ctx);
 
     await expect(caller.ingredient.copyAiToManualNotes({ id: 1 })).rejects.toThrow("No AI notes to copy");
+  });
+});
+
+describe("ingredient.update with pyramidPosition", () => {
+  beforeEach(() => {
+    storedIngredient = { ...mockIngredient };
+    lastUpdateData = {};
+  });
+
+  it("saves pyramidPosition when provided", async () => {
+    const ctx = createTestContext();
+    const caller = appRouter.createCaller(ctx);
+
+    await caller.ingredient.update({
+      id: 1,
+      pyramidPosition: "heart",
+    });
+
+    expect(lastUpdateData.pyramidPosition).toBe("heart");
+    expect(lastUpdateData.lastEditedAt).toBeInstanceOf(Date);
+    expect(lastUpdateData.lastEditedBySource).toBe("user");
+  });
+
+  it("accepts all valid pyramid positions", async () => {
+    const ctx = createTestContext();
+    const caller = appRouter.createCaller(ctx);
+    const positions = ["top", "top-heart", "heart", "heart-base", "base", "unknown"] as const;
+
+    for (const pos of positions) {
+      await caller.ingredient.update({ id: 1, pyramidPosition: pos });
+      expect(lastUpdateData.pyramidPosition).toBe(pos);
+    }
+  });
+
+  it("allows clearing pyramidPosition with null", async () => {
+    const ctx = createTestContext();
+    const caller = appRouter.createCaller(ctx);
+
+    await caller.ingredient.update({
+      id: 1,
+      pyramidPosition: null,
+    });
+
+    expect(lastUpdateData.pyramidPosition).toBeNull();
+  });
+});
+
+describe("ingredient dilution CRUD", () => {
+  beforeEach(() => {
+    storedIngredient = { ...mockIngredient };
+    lastUpdateData = {};
+    mockDilutions = [
+      { id: 1, ingredientId: 1, userId: 1, percentage: "10.0000", solvent: "Ethanol", notes: null, dateCreated: new Date() },
+    ];
+  });
+
+  it("lists dilutions for an ingredient", async () => {
+    const ctx = createTestContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.ingredient.dilutions({ ingredientId: 1 });
+    expect(result).toHaveLength(1);
+    expect(result[0].percentage).toBe("10.0000");
+  });
+
+  it("adds a new dilution", async () => {
+    const ctx = createTestContext();
+    const caller = appRouter.createCaller(ctx);
+    const { addIngredientDilution } = await import("./db");
+
+    const result = await caller.ingredient.addDilution({
+      ingredientId: 1,
+      percentage: "5.0000",
+      solvent: "DPG",
+      notes: "Test dilution",
+    });
+
+    expect(result).toBe(99);
+    expect(addIngredientDilution).toHaveBeenCalledWith(expect.objectContaining({
+      ingredientId: 1,
+      userId: 1,
+      percentage: "5.0000",
+      solvent: "DPG",
+      notes: "Test dilution",
+    }));
+  });
+
+  it("deletes a dilution", async () => {
+    const ctx = createTestContext();
+    const caller = appRouter.createCaller(ctx);
+    const { deleteIngredientDilution } = await import("./db");
+
+    await caller.ingredient.deleteDilution({ id: 1 });
+
+    expect(deleteIngredientDilution).toHaveBeenCalledWith(1, 1);
   });
 });
 

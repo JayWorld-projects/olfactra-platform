@@ -1,3 +1,14 @@
+export const PYRAMID_POSITIONS = [
+  { value: "top", label: "Top", icon: "▲", description: "First impression, 15-30 min" },
+  { value: "top-heart", label: "Top-Heart", icon: "◆", description: "Bridge note, 30 min-1 hr" },
+  { value: "heart", label: "Heart", icon: "●", description: "Core character, 1-3 hrs" },
+  { value: "heart-base", label: "Heart-Base", icon: "◆", description: "Transition, 3-5 hrs" },
+  { value: "base", label: "Base", icon: "■", description: "Foundation, 5+ hrs" },
+  { value: "unknown", label: "Unknown", icon: "?", description: "Not yet classified" },
+] as const;
+
+export type PyramidPosition = typeof PYRAMID_POSITIONS[number]["value"];
+
 export const LONGEVITY_LABELS: Record<number, string> = {
   0: "Extremely Volatile",
   1: "Top Note",

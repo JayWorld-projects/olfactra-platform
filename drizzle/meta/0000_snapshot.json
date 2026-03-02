@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "1a69a795-6aa2-4815-b1b6-ab78191f303b",
+  "id": "a19bcc20-5eb7-4134-b5f5-fb65ff74f6b4",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "favorites": {
@@ -517,6 +517,74 @@
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
+    "ingredient_dilutions": {
+      "name": "ingredient_dilutions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "ingredientId": {
+          "name": "ingredientId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "userId": {
+          "name": "userId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "percentage": {
+          "name": "percentage",
+          "type": "decimal(8,4)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "solvent": {
+          "name": "solvent",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'Ethanol'"
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "dateCreated": {
+          "name": "dateCreated",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "ingredient_dilutions_id": {
+          "name": "ingredient_dilutions_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
     "ingredients": {
       "name": "ingredients",
       "columns": {
@@ -639,6 +707,13 @@
           "notNull": false,
           "autoincrement": false,
           "default": "'user'"
+        },
+        "pyramidPosition": {
+          "name": "pyramidPosition",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         },
         "createdAt": {
           "name": "createdAt",

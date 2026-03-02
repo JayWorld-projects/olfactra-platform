@@ -12,10 +12,11 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavItems } from "./Home";
 import { trpc } from "@/lib/trpc";
-import { LONGEVITY_LABELS, CATEGORY_COLORS } from "@shared/perfumery";
+import { LONGEVITY_LABELS, CATEGORY_COLORS, PYRAMID_POSITIONS } from "@shared/perfumery";
 import {
   ArrowLeft, Edit, Trash2, Sparkles, Loader2, Star, Copy,
-  Clock, CalendarDays, FileText, Bot, LockKeyhole, Save,
+  Clock, CalendarDays, FileText, Bot, LockKeyhole, Save, Triangle,
+  Plus, Droplets, X,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useLocation, useParams } from "wouter";
@@ -97,9 +98,12 @@ function DetailContent() {
   const [showDelete, setShowDelete] = useState(false);
   const [manualNotesText, setManualNotesText] = useState<string | null>(null);
   const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [showAddDilution, setShowAddDilution] = useState(false);
+  const [newDilution, setNewDilution] = useState({ percentage: "", solvent: "Ethanol", notes: "" });
 
   const { data: ingredient, isLoading } = trpc.ingredient.get.useQuery({ id: ingredientId });
   const { data: usage } = trpc.ingredient.usage.useQuery({ id: ingredientId });
+  const { data: dilutions } = trpc.ingredient.dilutions.useQuery({ ingredientId });
   const { data: favoriteIds } = trpc.ingredient.favorites.useQuery();
   const utils = trpc.useUtils();
 
@@ -146,6 +150,22 @@ function DetailContent() {
     onSuccess: () => {
       utils.ingredient.get.invalidate({ id: ingredientId });
       toast.success("AI notes copied to manual notes");
+    },
+  });
+
+  const addDilutionMutation = trpc.ingredient.addDilution.useMutation({
+    onSuccess: () => {
+      utils.ingredient.dilutions.invalidate({ ingredientId });
+      setShowAddDilution(false);
+      setNewDilution({ percentage: "", solvent: "Ethanol", notes: "" });
+      toast.success("Dilution added");
+    },
+  });
+
+  const deleteDilutionMutation = trpc.ingredient.deleteDilution.useMutation({
+    onSuccess: () => {
+      utils.ingredient.dilutions.invalidate({ ingredientId });
+      toast.success("Dilution removed");
     },
   });
 
@@ -284,6 +304,44 @@ function DetailContent() {
             </CardContent>
           </Card>
 
+          {/* ═══ Fragrance Pyramid Position ═══ */}
+          <Card className="bg-card border-border/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Triangle className="size-4 text-primary" /> Fragrance Pyramid
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-1.5">
+                {PYRAMID_POSITIONS.map((pos) => {
+                  const isActive = ingredient.pyramidPosition === pos.value;
+                  return (
+                    <button
+                      key={pos.value}
+                      onClick={() => {
+                        updateMutation.mutate({ id: ingredientId, pyramidPosition: pos.value as any });
+                      }}
+                      className={`flex-1 flex flex-col items-center gap-1 py-2.5 px-1 rounded-lg border transition-all text-center ${
+                        isActive
+                          ? "bg-primary/10 border-primary/40 text-primary shadow-sm"
+                          : "border-border/30 text-muted-foreground hover:bg-secondary/50 hover:border-border/60"
+                      }`}
+                      title={pos.description}
+                    >
+                      <span className={`text-lg leading-none ${isActive ? "text-primary" : "text-muted-foreground/60"}`}>{pos.icon}</span>
+                      <span className={`text-[10px] font-medium leading-tight ${isActive ? "text-primary" : ""}`}>{pos.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {ingredient.pyramidPosition && (
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  {PYRAMID_POSITIONS.find(p => p.value === ingredient.pyramidPosition)?.description}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           {/* ═══ SECTION C: Description ═══ */}
           {ingredient.description && (
             <Card className="bg-card border-border/50">
@@ -419,6 +477,116 @@ function DetailContent() {
                   </p>
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* ═══ Dilutions Section ═══ */}
+          <Card className="bg-card border-border/50">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <Droplets className="size-4 text-primary" /> Dilutions
+                </CardTitle>
+                <Button
+                  variant="ghost" size="sm"
+                  onClick={() => setShowAddDilution(!showAddDilution)}
+                  className="h-7 text-xs"
+                >
+                  {showAddDilution ? <X className="size-3" /> : <Plus className="size-3" />}
+                  {showAddDilution ? "Cancel" : "Add Dilution"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {showAddDilution && (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Percentage (%)</Label>
+                      <Input
+                        className="mt-1 bg-background border-border/50 h-8 text-sm"
+                        type="number" step="0.01" min="0" max="100"
+                        placeholder="e.g. 10"
+                        value={newDilution.percentage}
+                        onChange={e => setNewDilution(p => ({ ...p, percentage: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Solvent</Label>
+                      <Input
+                        className="mt-1 bg-background border-border/50 h-8 text-sm"
+                        placeholder="Ethanol"
+                        value={newDilution.solvent}
+                        onChange={e => setNewDilution(p => ({ ...p, solvent: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Notes (optional)</Label>
+                    <Input
+                      className="mt-1 bg-background border-border/50 h-8 text-sm"
+                      placeholder="e.g. Working dilution for testing"
+                      value={newDilution.notes}
+                      onChange={e => setNewDilution(p => ({ ...p, notes: e.target.value }))}
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => addDilutionMutation.mutate({
+                      ingredientId,
+                      percentage: newDilution.percentage,
+                      solvent: newDilution.solvent || "Ethanol",
+                      notes: newDilution.notes || undefined,
+                    })}
+                    disabled={!newDilution.percentage || addDilutionMutation.isPending}
+                    className="h-7 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    {addDilutionMutation.isPending ? <Loader2 className="size-3 animate-spin" /> : <Plus className="size-3" />}
+                    Add Dilution
+                  </Button>
+                </div>
+              )}
+
+              {dilutions && dilutions.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-border/50">
+                      <TableHead className="text-muted-foreground">Concentration</TableHead>
+                      <TableHead className="text-muted-foreground">Solvent</TableHead>
+                      <TableHead className="text-muted-foreground">Date</TableHead>
+                      <TableHead className="text-right text-muted-foreground">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {dilutions.map((d: any) => (
+                      <TableRow key={d.id} className="border-border/30">
+                        <TableCell className="font-medium tabular-nums">{parseFloat(d.percentage).toFixed(2)}%</TableCell>
+                        <TableCell className="text-sm">{d.solvent || "Ethanol"}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {d.dateCreated ? new Date(d.dateCreated).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "—"}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost" size="sm"
+                            onClick={() => deleteDilutionMutation.mutate({ id: d.id })}
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="size-3" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : !showAddDilution ? (
+                <div className="text-center py-3">
+                  <p className="text-sm text-muted-foreground italic">No dilutions recorded.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Neat (100%) is assumed by default.</p>
+                </div>
+              ) : null}
+              {dilutions && dilutions.length > 0 && dilutions.every((d: any) => parseFloat(d.percentage) !== 100) && (
+                <p className="text-xs text-muted-foreground italic">Note: Neat (100%) is assumed as the base concentration.</p>
+              )}
             </CardContent>
           </Card>
 

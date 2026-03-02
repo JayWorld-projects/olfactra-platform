@@ -13,6 +13,7 @@ import {
   workspaces, InsertWorkspace, Workspace,
   workspaceIngredients, InsertWorkspaceIngredient, WorkspaceIngredient,
   formulaVersions, InsertFormulaVersion, FormulaVersion,
+  ingredientDilutions, InsertIngredientDilution, IngredientDilution,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -566,4 +567,35 @@ export async function deleteFormulaVersion(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.delete(formulaVersions).where(eq(formulaVersions.id, id));
+}
+
+// ─── Ingredient Dilutions ───────────────────────────────────────────────────
+
+export async function listIngredientDilutions(ingredientId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(ingredientDilutions)
+    .where(and(eq(ingredientDilutions.ingredientId, ingredientId), eq(ingredientDilutions.userId, userId)))
+    .orderBy(desc(ingredientDilutions.percentage));
+}
+
+export async function addIngredientDilution(data: InsertIngredientDilution) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(ingredientDilutions).values(data);
+  return result[0].insertId;
+}
+
+export async function updateIngredientDilution(id: number, userId: number, data: Partial<InsertIngredientDilution>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(ingredientDilutions).set(data)
+    .where(and(eq(ingredientDilutions.id, id), eq(ingredientDilutions.userId, userId)));
+}
+
+export async function deleteIngredientDilution(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(ingredientDilutions)
+    .where(and(eq(ingredientDilutions.id, id), eq(ingredientDilutions.userId, userId)));
 }

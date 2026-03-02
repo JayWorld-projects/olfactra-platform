@@ -290,3 +290,31 @@
 - [x] Tests: IFRA warning red text rendering (visual change, verified in code)
 - [x] Verify: All 56 tests pass across 5 test files (2 corrupted test files from hibernation removed/recreated)
 - [x] Verify: Server compiles cleanly (TypeScript: No errors, LSP: No errors)
+
+## UPGRADE 4B: AI NOTES TESTING + PYRAMID SELECTOR + DILUTION TRACKING
+
+### AI Notes End-to-End Testing
+- [x] Test AI Notes generation on real ingredients via browser
+- [x] Test Copy AI Notes to Manual Notes flow via browser
+- [x] Verify AI notes are read-only by default
+- [x] Verify manual notes remain untouched after AI regeneration
+
+### Fragrance Pyramid Position Selector
+- [x] Schema: Add pyramidPosition field to ingredients table (enum: top, top-heart, heart, heart-base, base, unknown)
+- [x] Server: Include pyramidPosition in ingredient CRUD procedures
+- [x] UI: Add visual pyramid position selector to ingredient detail view
+- [x] UI: Selector shows 6 positions with icons (Top, Top-Heart, Heart, Heart-Base, Base, Unknown)
+- [x] UI: Clicking a position saves immediately (optimistic update)
+
+### Dilution Tracking Section
+- [x] Schema: Create ingredient_dilutions table (id, ingredientId, userId, percentage, solvent, dateCreated, notes)
+- [x] Server: CRUD procedures for dilutions (list, add, update, delete)
+- [x] UI: Dilutions section in ingredient detail with add form
+- [x] UI: Table showing concentration, solvent, date, and delete action
+- [x] UI: Default note that neat (100%) is assumed] UI: Default 100% neat entry shown if no dilutions exist
+
+### Quality Bar
+- [x] Tests: Pyramid position save/update (3 tests passing)
+- [x] Tests: Dilution CRUD operations (3 tests passing)
+- [x] Verify: All existing tests still pass (62 total across 5 files)
+- [x] Verify: Server compiles cleanly (TypeScript: No errors, LSP: No errors)

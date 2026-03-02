@@ -17,6 +17,7 @@ import {
   listWorkspacesWithCounts, getWorkspace, createWorkspace, updateWorkspace, deleteWorkspace,
   getWorkspaceIngredientIds, setWorkspaceIngredients,
   createFormulaVersion, listFormulaVersions, getFormulaVersion, revertFormulaToVersion, deleteFormulaVersion,
+  listIngredientDilutions, addIngredientDilution, updateIngredientDilution, deleteIngredientDilution,
 } from "./db";
 import { invokeLLM } from "./_core/llm";
 import { formulaImportRouter } from "./formulaImport";
@@ -68,6 +69,7 @@ export const appRouter = router({
         ifraLimit: z.string().optional(),
         longevity: z.number().min(0).max(5).optional(),
         description: z.string().optional(),
+        pyramidPosition: z.enum(["top", "top-heart", "heart", "heart-base", "base", "unknown"]).nullable().optional(),
       }))
       .mutation(({ ctx, input }) => {
         const { id, ...data } = input;
@@ -188,6 +190,41 @@ Include these sections:
         await bulkCreateIngredients(data);
         return { count: data.length };
       }),
+
+    dilutions: protectedProcedure
+      .input(z.object({ ingredientId: z.number() }))
+      .query(({ ctx, input }) => listIngredientDilutions(input.ingredientId, ctx.user.id)),
+
+    addDilution: protectedProcedure
+      .input(z.object({
+        ingredientId: z.number(),
+        percentage: z.string(),
+        solvent: z.string().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(({ ctx, input }) => addIngredientDilution({
+        ingredientId: input.ingredientId,
+        userId: ctx.user.id,
+        percentage: input.percentage,
+        solvent: input.solvent || "Ethanol",
+        notes: input.notes || null,
+      })),
+
+    updateDilution: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        percentage: z.string().optional(),
+        solvent: z.string().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(({ ctx, input }) => {
+        const { id, ...data } = input;
+        return updateIngredientDilution(id, ctx.user.id, data);
+      }),
+
+    deleteDilution: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(({ ctx, input }) => deleteIngredientDilution(input.id, ctx.user.id)),
 
     aiInfo: protectedProcedure
       .input(z.object({ ingredientName: z.string(), casNumber: z.string().optional() }))

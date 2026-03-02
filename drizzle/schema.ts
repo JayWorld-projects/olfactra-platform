@@ -33,6 +33,7 @@ export const ingredients = mysqlTable("ingredients", {
   aiNotesUpdatedAt: timestamp("aiNotesUpdatedAt"),
   lastEditedAt: timestamp("lastEditedAt"),
   lastEditedBySource: varchar("lastEditedBySource", { length: 20 }).default("user"),
+  pyramidPosition: varchar("pyramidPosition", { length: 20 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -156,6 +157,19 @@ export const workspaceIngredients = mysqlTable("workspace_ingredients", {
 
 export type WorkspaceIngredient = typeof workspaceIngredients.$inferSelect;
 export type InsertWorkspaceIngredient = typeof workspaceIngredients.$inferInsert;
+
+export const ingredientDilutions = mysqlTable("ingredient_dilutions", {
+  id: int("id").autoincrement().primaryKey(),
+  ingredientId: int("ingredientId").notNull(),
+  userId: int("userId").notNull(),
+  percentage: decimal("percentage", { precision: 8, scale: 4 }).notNull(),
+  solvent: varchar("solvent", { length: 255 }).default("Ethanol"),
+  notes: text("notes"),
+  dateCreated: timestamp("dateCreated").defaultNow().notNull(),
+});
+
+export type IngredientDilution = typeof ingredientDilutions.$inferSelect;
+export type InsertIngredientDilution = typeof ingredientDilutions.$inferInsert;
 
 export const formulaVersions = mysqlTable("formula_versions", {
   id: int("id").autoincrement().primaryKey(),
