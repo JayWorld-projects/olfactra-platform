@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavItems } from "./Home";
 import { trpc } from "@/lib/trpc";
-import { LONGEVITY_LABELS } from "@shared/perfumery";
+import { LONGEVITY_LABELS, CATEGORY_COLORS } from "@shared/perfumery";
 import { BookOpen, Plus, Search, X, Star, Package, Check, Undo2, Layers } from "lucide-react";
 import { LibrarySkeleton } from "@/components/LibrarySkeleton";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
