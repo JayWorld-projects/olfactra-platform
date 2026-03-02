@@ -80,6 +80,16 @@ CREATE TABLE `formulas` (
 	CONSTRAINT `formulas_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
+CREATE TABLE `ingredient_categories` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`userId` int NOT NULL,
+	`name` varchar(100) NOT NULL,
+	`color` varchar(20) DEFAULT '#6b7280',
+	`sortOrder` int DEFAULT 0,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `ingredient_categories_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
 CREATE TABLE `ingredient_dilutions` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`ingredientId` int NOT NULL,
