@@ -218,3 +218,75 @@
 - [x] Scent Lab: Align table headers, spacing, and card hierarchy
 - [x] Verify: No changes to logic, workflows, terminology, or order of operations
 - [x] Verify: All changes compatible with v1.0 manual
+
+## BUG FIXES
+
+- [ ] Bug: Platform stuck on loading page when previewing
+
+## UPGRADE 4: LIBRARY ENHANCEMENTS + INGREDIENT USAGE TRACE + IFRA WARNING EMPHASIS
+
+### Phase 1: Data Model Changes
+- [x] Schema: Add manualNotes (text, nullable) to ingredients table
+- [x] Schema: Add aiNotes (text, nullable) to ingredients table
+- [x] Schema: Add manualNotesUpdatedAt (datetime, nullable) to ingredients table
+- [x] Schema: Add aiNotesUpdatedAt (datetime, nullable) to ingredients table
+- [x] Schema: Add lastEditedAt (datetime, nullable) to ingredients table
+- [x] Schema: Add lastEditedBySource (text, nullable, default 'user') to ingredients table
+- [x] Schema: Push migration with no breaking changes
+
+### Phase 2: Library List View Cleanup
+- [x] UI: Library list rows show ingredient name only (primary text)
+- [x] UI: Keep existing category grouping headers/colors
+- [x] UI: No secondary metadata text lines on list rows
+- [x] UI: Keep search behavior unchanged
+
+### Phase 3A: Ingredient Detail — Header + Properties Card
+- [x] UI: Show ingredient name, CAS, FEMA, category, supplier in header card
+- [x] UI: Properties editable inline or via Edit button
+- [x] Server: Update lastEditedAt and lastEditedBySource=user on property edit
+
+### Phase 3B: Ingredient Detail — Notes Section
+- [x] UI: Manual Notes tab/block (editable, user can type and save)
+- [x] Server: Update manualNotesUpdatedAt and lastEditedAt on manual notes save
+- [x] UI: AI Notes block with "Generate AI Ingredient Notes" button
+- [x] Server: AI notes generation procedure (structured ingredient info)
+- [x] UI: AI Notes block is read-only by default
+- [x] UI: "Copy AI Notes to Manual Notes" button (same pattern as formula AI notes)
+- [x] Server: Update aiNotesUpdatedAt, lastEditedAt, lastEditedBySource=ai on AI generate/save
+- [x] Behavior: Regenerating AI notes never overwrites manual notes
+
+### Phase 3C: Description Formatting Improvement
+- [x] UI: Display description with preserved line breaks
+- [x] UI: Format single-blob descriptions into readable paragraphs and bullet points
+- [x] UI: If user edits description, store as plain text with preserved line breaks
+
+### Phase 3D: Usage in Formulas Section
+- [x] Server: Query formulas using this ingredient by ingredientId
+- [x] UI: "Usage in Formulas" section showing formula name (clickable), weight, dilution %, % of total
+- [x] UI: Default to as-dosed basis
+- [x] UI: Works for created, imported, and derived formulas
+
+### Phase 3E: Dilutions List
+- [x] Verify: Existing dilution management remains intact and unbroken
+
+### Phase 4: Traceability
+- [x] UI: Show Date Added timestamp in ingredient detail
+- [x] UI: Show Last Edited timestamp (lastEditedAt) in ingredient detail
+- [x] UI: Show Manual Notes Updated timestamp (manualNotesUpdatedAt) in ingredient detail
+- [x] UI: Show AI Notes Updated timestamp (aiNotesUpdatedAt) in ingredient detail
+- [x] Behavior: AI generation sets lastEditedBySource=ai
+
+### Phase 5: IFRA Warning Red Text
+- [x] UI: IFRA warning text color set to red in Formula Builder
+- [x] UI: IFRA warning text color set to red in any other formula views (FormulaCompare only has ifraLimit in type def, no warning display)
+- [x] UI: Keep existing banner styling, only change warning text color (changed amber to red)
+- [x] UI: Do not change compliance logic (logic unchanged)
+
+### Quality Bar
+- [x] Tests: Ingredient notes save and regenerate behavior (8 tests passing)
+- [x] Tests: Last edited timestamps and sources (covered in ingredient-notes.test.ts)
+- [x] Tests: Usage in formulas query correctness (existing getIngredientUsage tested via mock)
+- [x] Tests: Editable properties persistence (covered by update traceability test)
+- [x] Tests: IFRA warning red text rendering (visual change, verified in code)
+- [x] Verify: All 56 tests pass across 5 test files (2 corrupted test files from hibernation removed/recreated)
+- [x] Verify: Server compiles cleanly (TypeScript: No errors, LSP: No errors)

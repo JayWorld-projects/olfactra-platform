@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavItems } from "./Home";
 import { trpc } from "@/lib/trpc";
-import { LONGEVITY_LABELS } from "@shared/perfumery";
+import { LONGEVITY_LABELS, CATEGORY_COLORS } from "@shared/perfumery";
 import { BookOpen, Plus, Search, X, Star, Package, Check, Undo2, Layers } from "lucide-react";
 import { LibrarySkeleton } from "@/components/LibrarySkeleton";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -288,77 +288,15 @@ function LibraryContent() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map(ingredient => (
-            <Card
-              key={ingredient.id}
-              className={`group hover:border-primary/40 hover:shadow-sm transition-all bg-card border-border/50 ${batchMode ? "" : "cursor-pointer"}`}
-              onClick={() => !batchMode && setLocation(`/library/${ingredient.id}`)}
-            >
-              <CardContent className="pt-4 pb-4 space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-semibold text-sm leading-tight line-clamp-2 text-foreground group-hover:text-primary transition-colors">{ingredient.name}</h3>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {!batchMode && (
-                      <button
-                        onClick={(e) => toggleFavorite(e, ingredient.id)}
-                        className="p-1 rounded hover:bg-secondary transition-colors"
-                        title={favSet.has(ingredient.id) ? "Remove from favorites" : "Add to favorites"}
-                      >
-                        <Star className={`size-4 ${favSet.has(ingredient.id) ? "text-accent fill-accent" : "text-muted-foreground hover:text-accent"}`} />
-                      </button>
-                    )}
-                    {ingredient.category && (
-                      <Badge variant="secondary" className="text-xs bg-secondary text-secondary-foreground border-0">
-                        {ingredient.category}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                {ingredient.casNumber && (
-                  <p className="text-xs text-muted-foreground truncate font-mono tracking-wide">{ingredient.casNumber}</p>
-                )}
-                <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
-                  {ingredient.supplier && <span>Supplier: {ingredient.supplier}</span>}
-                  {batchMode ? (
-                    <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
-                      <span className="text-accent font-medium">Stock:</span>
-                      <Input
-                        value={batchEdits[ingredient.id] ?? ingredient.inventoryAmount ?? ""}
-                        onChange={e => {
-                          const val = e.target.value;
-                          setBatchEdits(prev => {
-                            const next = { ...prev };
-                            if (val === (ingredient.inventoryAmount ?? "")) {
-                              delete next[ingredient.id];
-                            } else {
-                              next[ingredient.id] = val;
-                            }
-                            return next;
-                          });
-                        }}
-                        className="h-7 w-24 text-xs bg-background border-accent/30 focus:border-accent"
-                      />
-                    </div>
-                  ) : (
-                    ingredient.inventoryAmount && <span>Stock: {ingredient.inventoryAmount}</span>
-                  )}
-                  {ingredient.costPerGram && <span className="text-accent font-medium">${ingredient.costPerGram}/g</span>}
-                </div>
-                <div className="flex items-center gap-2">
-                  {ingredient.longevity != null && (
-                    <Badge variant="outline" className="text-xs border-primary/30 text-primary">
-                      {LONGEVITY_LABELS[ingredient.longevity] || `Level ${ingredient.longevity}`}
-                    </Badge>
-                  )}
-                  {ingredient.ifraLimit && (
-                    <span className="text-xs text-muted-foreground">IFRA: {ingredient.ifraLimit}%</span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <IngredientList
+          filtered={filtered}
+          batchMode={batchMode}
+          batchEdits={batchEdits}
+          setBatchEdits={setBatchEdits}
+          favSet={favSet}
+          toggleFavorite={toggleFavorite}
+          setLocation={setLocation}
+        />
       )}
 
       {/* Add Dialog */}
@@ -420,5 +358,113 @@ function LibraryContent() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function IngredientList({
+  filtered,
+  batchMode,
+  batchEdits,
+  setBatchEdits,
+  favSet,
+  toggleFavorite,
+  setLocation,
+}: {
+  filtered: any[];
+  batchMode: boolean;
+  batchEdits: Record<number, string>;
+  setBatchEdits: React.Dispatch<React.SetStateAction<Record<number, string>>>;
+  favSet: Set<number>;
+  toggleFavorite: (e: React.MouseEvent, id: number) => void;
+  setLocation: (path: string) => void;
+}) {
+  // Group ingredients by category
+  const grouped = useMemo(() => {
+    const groups: Record<string, typeof filtered> = {};
+    for (const ing of filtered) {
+      const cat = ing.category || "Uncategorized";
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(ing);
+    }
+    // Sort categories alphabetically, with Uncategorized last
+    return Object.entries(groups).sort(([a], [b]) => {
+      if (a === "Uncategorized") return 1;
+      if (b === "Uncategorized") return -1;
+      return a.localeCompare(b);
+    });
+  }, [filtered]);
+
+  return (
+    <Card className="bg-card border-border/50 overflow-hidden">
+      <CardContent className="p-0">
+        {grouped.map(([category, ingredients]) => {
+          const catColor = CATEGORY_COLORS[category] || "#6b7280";
+          return (
+            <div key={category}>
+              {/* Category header */}
+              <div
+                className="sticky top-0 z-10 px-4 py-2 flex items-center gap-2.5 border-b border-border/30"
+                style={{ backgroundColor: `${catColor}12` }}
+              >
+                <div
+                  className="size-2.5 rounded-full shrink-0"
+                  style={{ backgroundColor: catColor }}
+                />
+                <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: catColor }}>
+                  {category}
+                </span>
+                <span className="text-xs text-muted-foreground">({ingredients.length})</span>
+              </div>
+              {/* Ingredient rows */}
+              {ingredients.map((ingredient: any, idx: number) => (
+                <div
+                  key={ingredient.id}
+                  className={`group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-secondary/50 ${idx < ingredients.length - 1 ? "border-b border-border/20" : ""} ${batchMode ? "" : "cursor-pointer"}`}
+                  onClick={() => !batchMode && setLocation(`/library/${ingredient.id}`)}
+                >
+                  <span className="flex-1 text-sm font-medium text-foreground group-hover:text-primary transition-colors truncate">
+                    {ingredient.name}
+                  </span>
+                  {batchMode ? (
+                    <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
+                      <span className="text-xs text-accent font-medium">Stock:</span>
+                      <Input
+                        value={batchEdits[ingredient.id] ?? ingredient.inventoryAmount ?? ""}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setBatchEdits(prev => {
+                            const next = { ...prev };
+                            if (val === (ingredient.inventoryAmount ?? "")) {
+                              delete next[ingredient.id];
+                            } else {
+                              next[ingredient.id] = val;
+                            }
+                            return next;
+                          });
+                        }}
+                        className="h-7 w-24 text-xs bg-background border-accent/30 focus:border-accent"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={(e) => toggleFavorite(e, ingredient.id)}
+                        className="p-1 rounded hover:bg-secondary transition-colors opacity-0 group-hover:opacity-100"
+                        title={favSet.has(ingredient.id) ? "Remove from favorites" : "Add to favorites"}
+                      >
+                        <Star className={`size-3.5 ${favSet.has(ingredient.id) ? "text-accent fill-accent opacity-100" : "text-muted-foreground hover:text-accent"}`} />
+                      </button>
+                      {favSet.has(ingredient.id) && (
+                        <Star className="size-3.5 text-accent fill-accent group-hover:hidden" />
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
   );
 }

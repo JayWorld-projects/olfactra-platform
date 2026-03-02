@@ -1,1 +1,0 @@
-ALTER TABLE `formulas` ADD `aiNotesLastGeneratedAt` timestamp;

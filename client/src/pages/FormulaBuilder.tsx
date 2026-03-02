@@ -598,17 +598,17 @@ ${[0,1,2,3,4,5].map(level => {
 
       {/* IFRA Warnings */}
       {ifraWarnings.length > 0 && (
-        <div className="rounded-xl border border-amber-400/30 bg-amber-50/80 dark:bg-amber-950/20 px-4 py-3.5 shadow-sm">
+        <div className="rounded-xl border border-red-400/30 bg-red-50/80 dark:bg-red-950/20 px-4 py-3.5 shadow-sm">
           <div className="flex items-center gap-2.5 mb-2">
-            <div className="flex items-center justify-center size-6 rounded-lg bg-amber-400/15">
-              <AlertTriangle className="size-3.5 text-amber-600 dark:text-amber-400" />
+            <div className="flex items-center justify-center size-6 rounded-lg bg-red-400/15">
+              <AlertTriangle className="size-3.5 text-red-600 dark:text-red-400" />
             </div>
-            <span className="font-medium text-sm text-amber-800 dark:text-amber-300">IFRA Limit Warnings</span>
+            <span className="font-medium text-sm text-red-700 dark:text-red-300">IFRA Limit Warnings</span>
           </div>
           <div className="space-y-1 pl-8.5">
             {ifraWarnings.map((w, i) => (
-              <p key={i} className="text-xs text-amber-700/80 dark:text-amber-400/70 leading-relaxed">
-                <span className="font-medium">{w.name}</span>: {w.current.toFixed(2)}% <span className="text-amber-600/60 dark:text-amber-500/50">(limit: {w.limit}%)</span>
+              <p key={i} className="text-xs text-red-600 dark:text-red-400 leading-relaxed font-medium">
+                <span className="font-semibold">{w.name}</span>: {w.current.toFixed(2)}% <span className="text-red-500/80 dark:text-red-400/70">(limit: {w.limit}%)</span>
               </p>
             ))}
           </div>

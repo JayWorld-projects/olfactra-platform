@@ -27,6 +27,12 @@ export const ingredients = mysqlTable("ingredients", {
   ifraLimit: decimal("ifraLimit", { precision: 10, scale: 4 }),
   longevity: int("longevity"),
   description: text("description"),
+  manualNotes: text("manualNotes"),
+  aiNotes: text("aiNotes"),
+  manualNotesUpdatedAt: timestamp("manualNotesUpdatedAt"),
+  aiNotesUpdatedAt: timestamp("aiNotesUpdatedAt"),
+  lastEditedAt: timestamp("lastEditedAt"),
+  lastEditedBySource: varchar("lastEditedBySource", { length: 20 }).default("user"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

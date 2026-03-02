@@ -71,7 +71,75 @@ export const appRouter = router({
       }))
       .mutation(({ ctx, input }) => {
         const { id, ...data } = input;
-        return updateIngredient(id, ctx.user.id, data);
+        return updateIngredient(id, ctx.user.id, {
+          ...data,
+          lastEditedAt: new Date(),
+          lastEditedBySource: "user",
+        });
+      }),
+
+    saveManualNotes: protectedProcedure
+      .input(z.object({ id: z.number(), manualNotes: z.string() }))
+      .mutation(({ ctx, input }) => {
+        return updateIngredient(input.id, ctx.user.id, {
+          manualNotes: input.manualNotes,
+          manualNotesUpdatedAt: new Date(),
+          lastEditedAt: new Date(),
+          lastEditedBySource: "user",
+        });
+      }),
+
+    generateAiNotes: protectedProcedure
+      .input(z.object({ id: z.number(), ingredientName: z.string(), casNumber: z.string().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const prompt = `You are an expert perfumer and fragrance chemist. Provide a concise but comprehensive reference card for the following perfumery ingredient. Format the output with clear markdown headings and bullet points.
+
+Ingredient: ${input.ingredientName}
+${input.casNumber ? `CAS Number: ${input.casNumber}` : ""}
+
+Include these sections:
+1. **Chemical Identity** (CAS, IUPAC name, molecular formula)
+2. **Olfactory Profile** (scent description, odor strength, character)
+3. **Substantivity** (top/heart/base classification, tenacity)
+4. **Usage in Perfumery** (typical usage levels, dosage ranges)
+5. **Safety & IFRA** (restrictions, sensitization, phototoxicity)
+6. **Blending Suggestions** (materials that pair well)
+7. **Notable Perfumes** (famous fragrances using this material)`;
+
+        const result = await invokeLLM({
+          messages: [
+            { role: "system", content: "You are an expert perfumer and fragrance chemist. Provide structured, factual reference information." },
+            { role: "user", content: prompt },
+          ],
+        });
+        const rawContent = result.choices[0]?.message?.content;
+        const content = typeof rawContent === "string" ? rawContent : "No information available.";
+        // Save to database
+        await updateIngredient(input.id, ctx.user.id, {
+          aiNotes: content,
+          aiNotesUpdatedAt: new Date(),
+          lastEditedAt: new Date(),
+          lastEditedBySource: "ai",
+        });
+        return { content };
+      }),
+
+    copyAiToManualNotes: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const ingredient = await getIngredient(input.id, ctx.user.id);
+        if (!ingredient?.aiNotes) throw new Error("No AI notes to copy");
+        const timestamp = new Date().toLocaleString();
+        const existingManual = ingredient.manualNotes || "";
+        const separator = existingManual ? "\n\n---\n\n" : "";
+        const newManualNotes = `${existingManual}${separator}*Copied from AI Notes on ${timestamp}:*\n\n${ingredient.aiNotes}`;
+        await updateIngredient(input.id, ctx.user.id, {
+          manualNotes: newManualNotes,
+          manualNotesUpdatedAt: new Date(),
+          lastEditedAt: new Date(),
+          lastEditedBySource: "user",
+        });
+        return { manualNotes: newManualNotes };
       }),
 
     delete: protectedProcedure

@@ -5,71 +5,8 @@
     {
       "idx": 0,
       "version": "5",
-      "when": 1771633064252,
-      "tag": "0000_stormy_swarm",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1771633519173,
-      "tag": "0001_rainy_lady_bullseye",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1771640720611,
-      "tag": "0002_happy_agent_brand",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "5",
-      "when": 1771647657578,
-      "tag": "0003_smart_morlun",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "5",
-      "when": 1771650398299,
-      "tag": "0004_dashing_silver_samurai",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "5",
-      "when": 1771651872836,
-      "tag": "0005_nervous_valeria_richards",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "5",
-      "when": 1771705802599,
-      "tag": "0006_fixed_johnny_blaze",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "5",
-      "when": 1771732811730,
-      "tag": "0007_flat_marvex",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "5",
-      "when": 1771741222409,
-      "tag": "0008_blue_omega_sentinel",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "5",
-      "when": 1771753770737,
-      "tag": "0009_smart_captain_midlands",
+      "when": 1772476229891,
+      "tag": "0000_outstanding_odin",
       "breakpoints": true
     }
   ]
