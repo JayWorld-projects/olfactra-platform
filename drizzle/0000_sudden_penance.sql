@@ -80,6 +80,17 @@ CREATE TABLE `formulas` (
 	CONSTRAINT `formulas_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
+CREATE TABLE `ingredient_dilutions` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`ingredientId` int NOT NULL,
+	`userId` int NOT NULL,
+	`percentage` decimal(8,4) NOT NULL,
+	`solvent` varchar(255) DEFAULT 'Ethanol',
+	`notes` text,
+	`dateCreated` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `ingredient_dilutions_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
 CREATE TABLE `ingredients` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`userId` int NOT NULL,
@@ -98,6 +109,7 @@ CREATE TABLE `ingredients` (
 	`aiNotesUpdatedAt` timestamp,
 	`lastEditedAt` timestamp,
 	`lastEditedBySource` varchar(20) DEFAULT 'user',
+	`pyramidPosition` varchar(20),
 	`createdAt` timestamp NOT NULL DEFAULT (now()),
 	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `ingredients_id` PRIMARY KEY(`id`)
