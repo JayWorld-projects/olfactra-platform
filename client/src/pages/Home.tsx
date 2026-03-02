@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { Beaker, BookOpen, FlaskConical, Import, Sparkles, LogIn, Droplets, ArrowRight, Layers } from "lucide-react";
+import { Beaker, BookOpen, FlaskConical, Import, Sparkles, LogIn, Droplets, ArrowRight, Layers, Palette } from "lucide-react";
 import { useLocation } from "wouter";
 import DashboardLayout from "@/components/DashboardLayout";
 import { DashboardLayoutSkeleton } from "@/components/DashboardLayoutSkeleton";
@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { label: "Formulas", href: "/formulas", icon: <FlaskConical className="size-4" /> },
   { label: "Scent Lab", href: "/concept", icon: <Sparkles className="size-4" /> },
   { label: "Workspaces", href: "/workspaces", icon: <Layers className="size-4" /> },
+  { label: "Categories", href: "/categories", icon: <Palette className="size-4" /> },
   { label: "Import", href: "/import", icon: <Import className="size-4" /> },
 ];
 

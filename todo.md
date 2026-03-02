@@ -324,3 +324,31 @@
 - [x] UI: AI Generated Notes section collapsible with expand/minimize toggle
 - [x] UI: Default state — collapsed showing 2-line preview; expanded when editing or clicking
 - [x] UI: Hover transitions on expand/collapse with chevron indicators
+
+## FEATURE: CATEGORY MANAGER PAGE
+### Schema + Server
+- [x] Schema: Create ingredient_categories table (id, userId, name, color, sortOrder, createdAt)
+- [x] Server: CRUD procedures for categories (list, create, rename, updateColor, reorder, delete)
+- [x] Server: Seed procedure to auto-populate from existing ingredient categories + CATEGORY_COLORS
+- [x] Server: Category deletion handling (warns if ingredients assigned, deletes record)
+
+### Category Manager Page UI
+- [x] UI: Dedicated /categories route with sidebar nav entry
+- [x] UI: List all categories with color dot, name, and ingredient count
+- [x] UI: Create new category with name and color picker
+- [x] UI: Inline rename category (Enter to save, Escape to cancel)
+- [x] UI: Color picker with 28 preset colors + custom hex input
+- [x] UI: Delete category with confirmation dialog (warns about assigned ingredients)
+- [x] UI: Visual style consistent with Olfactra design language
+
+### Integration
+- [x] Nav: Add Categories entry to sidebar navigation (Palette icon)
+- [x] Route: /categories registered in App.tsx
+- [x] Integration: Library page category headers use colors from categories table
+- [x] Integration: Ingredient detail category badge uses color from categories table
+
+### Quality Bar
+- [x] Tests: Category CRUD operations (9 tests passing)
+- [x] Tests: Category rename propagation (covered in rename test)
+- [x] Verify: All 71 tests pass across 6 test files
+- [x] Verify: Server compiles cleanly (TypeScript: No errors)

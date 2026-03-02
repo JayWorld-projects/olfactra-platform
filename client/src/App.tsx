@@ -13,6 +13,7 @@ import ScentConcept from "./pages/ScentConcept";
 import ImportPage from "./pages/ImportPage";
 import FormulaCompare from "./pages/FormulaCompare";
 import Workspaces from "./pages/Workspaces";
+import CategoryManager from "./pages/CategoryManager";
 
 function Router() {
   return (
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/formulas/:id" component={FormulaBuilder} />
       <Route path="/concept" component={ScentConcept} />
       <Route path="/workspaces" component={Workspaces} />
+      <Route path="/categories" component={CategoryManager} />
       <Route path="/import" component={ImportPage} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

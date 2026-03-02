@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavItems } from "./Home";
 import { trpc } from "@/lib/trpc";
-import { LONGEVITY_LABELS, CATEGORY_COLORS, PYRAMID_POSITIONS } from "@shared/perfumery";
+import { LONGEVITY_LABELS, PYRAMID_POSITIONS } from "@shared/perfumery";
 import {
   ArrowLeft, Edit, Trash2, Sparkles, Loader2, Star, Copy,
   Clock, CalendarDays, FileText, Bot, LockKeyhole, Save, Triangle,
@@ -234,7 +234,18 @@ function DetailContent() {
     });
   };
 
-  const catColor = ingredient.category ? CATEGORY_COLORS[ingredient.category] || "#6b7280" : "#6b7280";
+  // Fetch category colors from DB
+  const { data: dbCategories } = trpc.category.list.useQuery();
+  const categoryColorMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    if (dbCategories) {
+      for (const c of dbCategories) {
+        map[c.name] = c.color || "#6b7280";
+      }
+    }
+    return map;
+  }, [dbCategories]);
+  const catColor = ingredient.category ? categoryColorMap[ingredient.category] || "#6b7280" : "#6b7280";
 
   const properties = [
     { label: "Category", value: ingredient.category, color: catColor },

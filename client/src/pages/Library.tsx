@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavItems } from "./Home";
 import { trpc } from "@/lib/trpc";
-import { LONGEVITY_LABELS, CATEGORY_COLORS } from "@shared/perfumery";
+import { LONGEVITY_LABELS } from "@shared/perfumery";
 import { BookOpen, Plus, Search, X, Star, Package, Check, Undo2, Layers } from "lucide-react";
 import { LibrarySkeleton } from "@/components/LibrarySkeleton";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -48,7 +48,19 @@ function LibraryContent() {
     { enabled: !!activeWorkspaceId }
   );
   const { data: workspacesList } = trpc.workspace.list.useQuery();
+  const { data: dbCategories } = trpc.category.list.useQuery();
   const utils = trpc.useUtils();
+
+  // Build category color map from DB categories, fallback to defaults
+  const categoryColorMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    if (dbCategories) {
+      for (const c of dbCategories) {
+        map[c.name] = c.color || "#6b7280";
+      }
+    }
+    return map;
+  }, [dbCategories]);
 
   // Filter ingredients by active workspace
   const workspaceFilteredIngredients = useMemo(() => {
@@ -296,6 +308,7 @@ function LibraryContent() {
           favSet={favSet}
           toggleFavorite={toggleFavorite}
           setLocation={setLocation}
+          categoryColorMap={categoryColorMap}
         />
       )}
 
@@ -369,6 +382,7 @@ function IngredientList({
   favSet,
   toggleFavorite,
   setLocation,
+  categoryColorMap,
 }: {
   filtered: any[];
   batchMode: boolean;
@@ -377,6 +391,7 @@ function IngredientList({
   favSet: Set<number>;
   toggleFavorite: (e: React.MouseEvent, id: number) => void;
   setLocation: (path: string) => void;
+  categoryColorMap: Record<string, string>;
 }) {
   // Group ingredients by category
   const grouped = useMemo(() => {
@@ -398,7 +413,7 @@ function IngredientList({
     <Card className="bg-card border-border/50 overflow-hidden">
       <CardContent className="p-0">
         {grouped.map(([category, ingredients]) => {
-          const catColor = CATEGORY_COLORS[category] || "#6b7280";
+          const catColor = categoryColorMap[category] || "#6b7280";
           return (
             <div key={category}>
               {/* Category header */}

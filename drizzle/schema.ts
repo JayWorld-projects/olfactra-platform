@@ -158,6 +158,18 @@ export const workspaceIngredients = mysqlTable("workspace_ingredients", {
 export type WorkspaceIngredient = typeof workspaceIngredients.$inferSelect;
 export type InsertWorkspaceIngredient = typeof workspaceIngredients.$inferInsert;
 
+export const ingredientCategories = mysqlTable("ingredient_categories", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  color: varchar("color", { length: 20 }).default("#6b7280"),
+  sortOrder: int("sortOrder").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type IngredientCategory = typeof ingredientCategories.$inferSelect;
+export type InsertIngredientCategory = typeof ingredientCategories.$inferInsert;
+
 export const ingredientDilutions = mysqlTable("ingredient_dilutions", {
   id: int("id").autoincrement().primaryKey(),
   ingredientId: int("ingredientId").notNull(),

@@ -14,6 +14,7 @@ import {
   workspaceIngredients, InsertWorkspaceIngredient, WorkspaceIngredient,
   formulaVersions, InsertFormulaVersion, FormulaVersion,
   ingredientDilutions, InsertIngredientDilution, IngredientDilution,
+  ingredientCategories, InsertIngredientCategory, IngredientCategory,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -598,4 +599,57 @@ export async function deleteIngredientDilution(id: number, userId: number) {
   if (!db) throw new Error("Database not available");
   await db.delete(ingredientDilutions)
     .where(and(eq(ingredientDilutions.id, id), eq(ingredientDilutions.userId, userId)));
+}
+
+// ─── Ingredient Categories ─────────────────────────────────────────────────
+
+export async function listIngredientCategories(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(ingredientCategories)
+    .where(eq(ingredientCategories.userId, userId))
+    .orderBy(asc(ingredientCategories.sortOrder), asc(ingredientCategories.name));
+}
+
+export async function createIngredientCategory(data: InsertIngredientCategory) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(ingredientCategories).values(data);
+  return result[0].insertId;
+}
+
+export async function updateIngredientCategory(id: number, userId: number, data: Partial<InsertIngredientCategory>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(ingredientCategories).set(data)
+    .where(and(eq(ingredientCategories.id, id), eq(ingredientCategories.userId, userId)));
+}
+
+export async function deleteIngredientCategory(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(ingredientCategories)
+    .where(and(eq(ingredientCategories.id, id), eq(ingredientCategories.userId, userId)));
+}
+
+export async function getIngredientCountByCategory(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.select({
+    category: ingredients.category,
+    count: sql<number>`COUNT(*)`,
+  })
+    .from(ingredients)
+    .where(eq(ingredients.userId, userId))
+    .groupBy(ingredients.category);
+  return result;
+}
+
+export async function renameIngredientCategory(userId: number, oldName: string, newName: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Update all ingredients that have the old category name
+  await db.update(ingredients)
+    .set({ category: newName })
+    .where(and(eq(ingredients.userId, userId), eq(ingredients.category, oldName)));
 }

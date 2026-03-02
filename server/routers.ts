@@ -18,6 +18,8 @@ import {
   getWorkspaceIngredientIds, setWorkspaceIngredients,
   createFormulaVersion, listFormulaVersions, getFormulaVersion, revertFormulaToVersion, deleteFormulaVersion,
   listIngredientDilutions, addIngredientDilution, updateIngredientDilution, deleteIngredientDilution,
+  listIngredientCategories, createIngredientCategory, updateIngredientCategory, deleteIngredientCategory,
+  getIngredientCountByCategory, renameIngredientCategory,
 } from "./db";
 import { invokeLLM } from "./_core/llm";
 import { formulaImportRouter } from "./formulaImport";
@@ -880,6 +882,75 @@ Return ONLY the JSON object, no markdown fencing.`;
   formulaImport: formulaImportRouter,
 
   derived: derivedFormulaRouter,
+
+  category: router({
+    list: protectedProcedure.query(({ ctx }) => listIngredientCategories(ctx.user.id)),
+
+    counts: protectedProcedure.query(({ ctx }) => getIngredientCountByCategory(ctx.user.id)),
+
+    create: protectedProcedure
+      .input(z.object({ name: z.string().min(1), color: z.string().optional(), sortOrder: z.number().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await createIngredientCategory({ ...input, userId: ctx.user.id });
+        return { id };
+      }),
+
+    update: protectedProcedure
+      .input(z.object({ id: z.number(), name: z.string().min(1).optional(), color: z.string().optional(), sortOrder: z.number().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const { id, ...data } = input;
+        await updateIngredientCategory(id, ctx.user.id, data);
+        return { success: true };
+      }),
+
+    rename: protectedProcedure
+      .input(z.object({ id: z.number(), oldName: z.string(), newName: z.string().min(1) }))
+      .mutation(async ({ ctx, input }) => {
+        // Update the category record
+        await updateIngredientCategory(input.id, ctx.user.id, { name: input.newName });
+        // Update all ingredients with the old category name
+        await renameIngredientCategory(ctx.user.id, input.oldName, input.newName);
+        return { success: true };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteIngredientCategory(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    seed: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        // Seed categories from existing ingredient data + CATEGORY_COLORS
+        const existing = await listIngredientCategories(ctx.user.id);
+        if (existing.length > 0) return { seeded: 0, message: "Categories already exist" };
+        const counts = await getIngredientCountByCategory(ctx.user.id);
+        const CATEGORY_COLORS: Record<string, string> = {
+          "Aldehydic": "#c084fc", "Amber": "#f59e0b", "Animalic": "#78716c",
+          "Aromatic": "#22c55e", "Balsamic": "#a16207", "Citrus": "#facc15",
+          "Earthy": "#92400e", "Floral": "#f472b6", "Fruity": "#fb923c",
+          "Green": "#4ade80", "Herbal": "#86efac", "Leather": "#78716c",
+          "Marine": "#38bdf8", "Mineral": "#94a3b8", "Mossy": "#65a30d",
+          "Musky": "#d4d4d8", "Ozonic": "#7dd3fc", "Powdery": "#fda4af",
+          "Resinous": "#b45309", "Smoky": "#6b7280", "Spicy": "#ef4444",
+          "Sweet": "#f9a8d4", "Woody": "#a16207", "Gourmand": "#f97316",
+          "Aquatic": "#06b6d4", "Camphoraceous": "#a3e635", "Waxy": "#fde68a",
+        };
+        const categoryNames = new Set(counts.map(c => c.category).filter(Boolean));
+        // Also add any from CATEGORY_COLORS that aren't in the data
+        Object.keys(CATEGORY_COLORS).forEach(k => categoryNames.add(k));
+        const sorted = Array.from(categoryNames).filter(Boolean).sort() as string[];
+        let seeded = 0;
+        for (let i = 0; i < sorted.length; i++) {
+          const name = sorted[i];
+          const color = CATEGORY_COLORS[name] || "#6b7280";
+          await createIngredientCategory({ userId: ctx.user.id, name, color, sortOrder: i });
+          seeded++;
+        }
+        return { seeded, message: `Seeded ${seeded} categories` };
+      }),
+  }),
 
   substitution: router({
     suggest: protectedProcedure
