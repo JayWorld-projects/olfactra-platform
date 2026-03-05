@@ -349,8 +349,8 @@ function LibraryContent() {
                 <Input className="mt-1.5 bg-background border-border/50" type="number" step="0.001" value={formData.costPerGram} onChange={e => setFormData(p => ({ ...p, costPerGram: e.target.value }))} />
               </div>
               <div>
-                <Label className="text-sm">IFRA Limit (%)</Label>
-                <Input className="mt-1.5 bg-background border-border/50" type="number" step="0.001" value={formData.ifraLimit} onChange={e => setFormData(p => ({ ...p, ifraLimit: e.target.value }))} />
+                <Label className="text-sm text-red-600 dark:text-red-400">IFRA Limit (%)</Label>
+                <Input className="mt-1.5 bg-background border-border/50 text-red-600 dark:text-red-400" type="number" step="0.001" value={formData.ifraLimit} onChange={e => setFormData(p => ({ ...p, ifraLimit: e.target.value }))} />
               </div>
               <div>
                 <Label className="text-sm">Longevity (0-5)</Label>

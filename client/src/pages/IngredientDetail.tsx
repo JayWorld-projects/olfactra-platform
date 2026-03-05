@@ -252,7 +252,7 @@ function DetailContent() {
     { label: "Supplier", value: ingredient.supplier },
     { label: "Inventory", value: ingredient.inventoryAmount },
     { label: "Cost per Gram", value: ingredient.costPerGram ? `$${ingredient.costPerGram}` : null },
-    { label: "IFRA Limit", value: ingredient.ifraLimit ? `${ingredient.ifraLimit}%` : null },
+    { label: "IFRA Limit", value: ingredient.ifraLimit ? `${ingredient.ifraLimit}%` : null, isIfra: true },
     { label: "Longevity", value: ingredient.longevity != null ? LONGEVITY_LABELS[ingredient.longevity] || `Level ${ingredient.longevity}` : null, isBadge: true },
   ];
 
@@ -303,11 +303,13 @@ function DetailContent() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-5 text-sm">
                 {properties.map(p => (
                   <div key={p.label}>
-                    <span className="text-muted-foreground block text-xs mb-1">{p.label}</span>
+                    <span className={`block text-xs mb-1 ${(p as any).isIfra ? "text-red-600 dark:text-red-400 font-medium" : "text-muted-foreground"}`}>{p.label}</span>
                     {p.isBadge && p.value ? (
                       <Badge variant="outline" className="text-xs border-primary/30 text-primary">{p.value}</Badge>
                     ) : p.color && p.label === "Category" && p.value ? (
                       <span className="font-medium" style={{ color: p.color }}>{p.value}</span>
+                    ) : (p as any).isIfra && p.value ? (
+                      <span className="font-medium text-red-600 dark:text-red-400">{p.value}</span>
                     ) : (
                       <span className="font-medium text-foreground">{p.value || "—"}</span>
                     )}
@@ -801,8 +803,8 @@ function DetailContent() {
                 <Input className="mt-1.5 bg-background border-border/50" type="number" step="0.001" value={editData.costPerGram || ""} onChange={e => setEditData(p => ({ ...p, costPerGram: e.target.value }))} />
               </div>
               <div>
-                <Label className="text-sm">IFRA Limit (%)</Label>
-                <Input className="mt-1.5 bg-background border-border/50" type="number" step="0.001" value={editData.ifraLimit || ""} onChange={e => setEditData(p => ({ ...p, ifraLimit: e.target.value }))} />
+                <Label className="text-sm text-red-600 dark:text-red-400">IFRA Limit (%)</Label>
+                <Input className="mt-1.5 bg-background border-border/50 text-red-600 dark:text-red-400" type="number" step="0.001" value={editData.ifraLimit || ""} onChange={e => setEditData(p => ({ ...p, ifraLimit: e.target.value }))} />
               </div>
               <div>
                 <Label className="text-sm">Longevity (0-5)</Label>

@@ -1373,7 +1373,7 @@ function LibraryImportSection() {
                 <TableHeader>
                   <TableRow className="border-border/50">
                     {["#", "Name", "CAS", "Supplier", "Category", "Stock", "$/g", "IFRA", "Long."].map(h => (
-                      <TableHead key={h} className="sticky top-0 bg-card text-muted-foreground text-xs font-semibold uppercase tracking-wider z-10">{h}</TableHead>
+                      <TableHead key={h} className={`sticky top-0 bg-card text-xs font-semibold uppercase tracking-wider z-10 ${h === "IFRA" ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}`}>{h}</TableHead>
                     ))}
                   </TableRow>
                 </TableHeader>
@@ -1387,7 +1387,7 @@ function LibraryImportSection() {
                       <TableCell className="text-xs">{row.category || "—"}</TableCell>
                       <TableCell className="text-xs">{row.inventoryAmount || "—"}</TableCell>
                       <TableCell className="text-xs text-accent">{row.costPerGram || "—"}</TableCell>
-                      <TableCell className="text-xs">{row.ifraLimit || "—"}</TableCell>
+                      <TableCell className="text-xs text-red-600 dark:text-red-400 font-medium">{row.ifraLimit || "—"}</TableCell>
                       <TableCell className="text-xs tabular-nums">{row.longevity}</TableCell>
                     </TableRow>
                   ))}

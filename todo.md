@@ -352,3 +352,13 @@
 - [x] Tests: Category rename propagation (covered in rename test)
 - [x] Verify: All 71 tests pass across 6 test files
 - [x] Verify: Server compiles cleanly (TypeScript: No errors)
+
+## FIX: ALL IFRA LIMIT WARNING TEXT IN RED
+- [x] Audit all IFRA warning/limit text across all pages (6 files checked)
+- [x] Update all IFRA warning text to red color
+- [x] Verify no IFRA warning text remains in non-red color
+  - FormulaBuilder: IFRA warnings banner already red (from Upgrade 4)
+  - IngredientDetail: IFRA Limit label + value now red in properties card and edit form
+  - Library: IFRA Limit label + input now red in add ingredient form
+  - ImportPage: IFRA column header + cell values now red
+  - FormulaCompare: ifraLimit only in type definition, not rendered — no change needed
