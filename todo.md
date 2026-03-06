@@ -371,11 +371,11 @@
 - [x] Push migration with no breaking changes
 
 ### Phase 2: Server CRUD
-- [ ] Server: List accords procedure (with ingredients populated)
-- [ ] Server: Get single accord procedure
-- [ ] Server: Save accord procedure
-- [ ] Server: Delete accord procedure
-- [ ] Server: Update accord procedure
+- [x] Server: List accords procedure (with ingredients populated)
+- [x] Server: Get single accord procedure
+- [x] Server: Save accord procedure
+- [x] Server: Delete accord procedure
+- [x] Server: Update accord procedure
 
 ### Phase 3: AI Accord Generation
 - [x] Server: Generate accord from prompt procedure
@@ -419,4 +419,33 @@
 - [x] Tests: Accord save/delete operations (3 tests passing)
 - [x] Tests: Accord to formula insertion (1 test passing)
 - [x] Verify: All 78 tests pass across 7 test files
+- [x] Verify: Server compiles cleanly (TypeScript: No errors)
+
+## FEATURE: ACCORD INGREDIENT EDITING
+
+### Inline Percentage Editing
+- [x] UI: Make ingredient percentages editable inline on accord cards (generated + saved)
+- [x] UI: Show running total percentage with visual indicator (green if 100%, amber/red otherwise)
+- [x] UI: "Normalize" button to recalculate percentages to sum to 100%
+- [x] UI: Preserve accord name, description, scent family, longevity, and explanation during edits
+- [x] UI: Allow removing an ingredient from an accord (minimum 1 ingredient guard)
+
+### Ingredient Swap
+- [x] UI: "Swap" button on each ingredient row in an accord card
+- [x] Server: New accord.suggestSwap procedure (AI-powered, accord-context-aware substitution)
+- [x] UI: Show swap suggestions from user's library with match %, cost comparison, and reasoning
+- [x] UI: Selecting a swap replaces the ingredient, keeps the percentage
+- [x] UI: Accord identity (name, explanation) preserved after swap unless regenerated
+
+### Normalization
+- [x] Logic: Normalize percentages proportionally to sum to exactly 100%
+- [x] Logic: Handle edge cases (single ingredient, all zero, etc.)
+- [x] UI: Visual feedback when total drifts from 100% (amber badge + Normalize button appears)
+
+### Quality Bar
+- [x] Tests: suggestSwap procedure (5 tests — suggestions returned, required fields, valid IDs, excludes accord ingredients, cost comparison values)
+- [x] Tests: sendToFormula with edited percentages (3 tests — weight calculation, swapped IDs, decimal normalization)
+- [x] Tests: save with edited ingredients (3 tests — non-round percentages, swapped ingredient, reduced ingredient count)
+- [x] Verify: All 89 tests pass across 8 test files
+- [x] Verify: Formula Builder logic unchanged
 - [x] Verify: Server compiles cleanly (TypeScript: No errors)

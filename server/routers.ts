@@ -1218,6 +1218,106 @@ Return a JSON object with this structure:
         }
       }),
 
+    suggestSwap: protectedProcedure
+      .input(z.object({
+        ingredientId: z.number(),
+        ingredientName: z.string(),
+        accordIngredientIds: z.array(z.number()),
+        accordContext: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const allIngredients = await listIngredients(ctx.user.id);
+        const currentIngredient = allIngredients.find(i => i.id === input.ingredientId);
+        if (!currentIngredient) throw new Error("Ingredient not found");
+
+        // Exclude ingredients already in the accord
+        const accordIngIds = new Set(input.accordIngredientIds);
+        const candidates = allIngredients.filter(i => !accordIngIds.has(i.id));
+
+        const candidateList = candidates.map(i =>
+          `- ID:${i.id} | ${i.name} | Category: ${i.category || "N/A"} | Longevity: ${i.longevity ?? "N/A"}/5 | Cost: $${i.costPerGram || "N/A"}/g`
+        ).join("\n");
+
+        const prompt = `You are an expert perfumer. I need substitution suggestions for an ingredient in a fragrance accord.
+
+Current ingredient: ${currentIngredient.name}
+- Category: ${currentIngredient.category || "N/A"}
+- Longevity: ${currentIngredient.longevity ?? "N/A"}/5
+- Cost: $${currentIngredient.costPerGram || "N/A"}/g
+- Description: ${currentIngredient.description || "N/A"}
+${input.accordContext ? `\nAccord context: ${input.accordContext}` : ""}
+
+Available ingredients in the user's library (not already in this accord):
+${candidateList}
+
+Suggest up to 5 substitutes from the available list. For each, explain:
+1. Why it's a good olfactive substitute for this accord context
+2. How it differs in scent profile
+3. Whether it's a cost-effective swap
+
+Return JSON:
+{
+  "suggestions": [
+    {
+      "ingredientId": <number>,
+      "name": "<ingredient name>",
+      "similarity": <number 1-100>,
+      "reason": "<why this is a good substitute>",
+      "difference": "<how the scent will change>",
+      "costComparison": "cheaper" | "similar" | "more expensive"
+    }
+  ]
+}`;
+
+        const result = await invokeLLM({
+          messages: [
+            { role: "system", content: "You are an expert perfumer. Return only valid JSON." },
+            { role: "user", content: prompt },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "accord_swap_suggestions",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  suggestions: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        ingredientId: { type: "integer" },
+                        name: { type: "string" },
+                        similarity: { type: "integer" },
+                        reason: { type: "string" },
+                        difference: { type: "string" },
+                        costComparison: { type: "string", enum: ["cheaper", "similar", "more expensive"] },
+                      },
+                      required: ["ingredientId", "name", "similarity", "reason", "difference", "costComparison"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ["suggestions"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const rawContent = result.choices[0]?.message?.content;
+        const content = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent) || "{}";
+        try {
+          const parsed = JSON.parse(content);
+          const validIds = new Set(candidates.map(c => c.id));
+          parsed.suggestions = (parsed.suggestions || []).filter((s: any) => validIds.has(s.ingredientId));
+          return parsed;
+        } catch {
+          return { suggestions: [] };
+        }
+      }),
+
     sendToFormula: protectedProcedure
       .input(z.object({
         name: z.string().min(1),
