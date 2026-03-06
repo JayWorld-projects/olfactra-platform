@@ -15,6 +15,8 @@ import {
   formulaVersions, InsertFormulaVersion, FormulaVersion,
   ingredientDilutions, InsertIngredientDilution, IngredientDilution,
   ingredientCategories, InsertIngredientCategory, IngredientCategory,
+  accords, InsertAccord, Accord,
+  accordIngredients, InsertAccordIngredient, AccordIngredient,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -652,4 +654,97 @@ export async function renameIngredientCategory(userId: number, oldName: string, 
   await db.update(ingredients)
     .set({ category: newName })
     .where(and(eq(ingredients.userId, userId), eq(ingredients.category, oldName)));
+}
+
+// ─── Accords ──────────────────────────────────────────────────────────────
+
+export async function listAccords(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select().from(accords)
+    .where(eq(accords.userId, userId))
+    .orderBy(desc(accords.createdAt));
+  // Populate ingredients for each accord
+  const result = [];
+  for (const accord of rows) {
+    const items = await db.select({
+      id: accordIngredients.id,
+      accordId: accordIngredients.accordId,
+      ingredientId: accordIngredients.ingredientId,
+      percentage: accordIngredients.percentage,
+      ingredientName: ingredients.name,
+      ingredientCategory: ingredients.category,
+    })
+      .from(accordIngredients)
+      .leftJoin(ingredients, eq(accordIngredients.ingredientId, ingredients.id))
+      .where(eq(accordIngredients.accordId, accord.id));
+    result.push({ ...accord, ingredients: items });
+  }
+  return result;
+}
+
+export async function getAccord(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(accords)
+    .where(and(eq(accords.id, id), eq(accords.userId, userId)))
+    .limit(1);
+  if (!rows[0]) return undefined;
+  const items = await db.select({
+    id: accordIngredients.id,
+    accordId: accordIngredients.accordId,
+    ingredientId: accordIngredients.ingredientId,
+    percentage: accordIngredients.percentage,
+    ingredientName: ingredients.name,
+    ingredientCategory: ingredients.category,
+  })
+    .from(accordIngredients)
+    .leftJoin(ingredients, eq(accordIngredients.ingredientId, ingredients.id))
+    .where(eq(accordIngredients.accordId, id));
+  return { ...rows[0], ingredients: items };
+}
+
+export async function saveAccord(
+  userId: number,
+  data: { name: string; description?: string; scentFamily?: string; estimatedLongevity?: string; explanation?: string },
+  ingredientList: { ingredientId: number; percentage: string }[]
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(accords).values({
+    userId,
+    name: data.name,
+    description: data.description || null,
+    scentFamily: data.scentFamily || null,
+    estimatedLongevity: data.estimatedLongevity || null,
+    explanation: data.explanation || null,
+  });
+  const accordId = result[0].insertId;
+  for (const item of ingredientList) {
+    await db.insert(accordIngredients).values({
+      accordId,
+      ingredientId: item.ingredientId,
+      percentage: item.percentage,
+    });
+  }
+  return accordId;
+}
+
+export async function deleteAccord(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Delete ingredients first
+  await db.delete(accordIngredients).where(eq(accordIngredients.accordId, id));
+  await db.delete(accords).where(and(eq(accords.id, id), eq(accords.userId, userId)));
+}
+
+export async function updateAccord(
+  id: number,
+  userId: number,
+  data: Partial<InsertAccord>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(accords).set(data)
+    .where(and(eq(accords.id, id), eq(accords.userId, userId)));
 }

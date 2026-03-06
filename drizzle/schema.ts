@@ -194,3 +194,28 @@ export const formulaVersions = mysqlTable("formula_versions", {
 
 export type FormulaVersion = typeof formulaVersions.$inferSelect;
 export type InsertFormulaVersion = typeof formulaVersions.$inferInsert;
+
+export const accords = mysqlTable("accords", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  scentFamily: varchar("scentFamily", { length: 100 }),
+  estimatedLongevity: varchar("estimatedLongevity", { length: 50 }),
+  explanation: text("explanation"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Accord = typeof accords.$inferSelect;
+export type InsertAccord = typeof accords.$inferInsert;
+
+export const accordIngredients = mysqlTable("accord_ingredients", {
+  id: int("id").autoincrement().primaryKey(),
+  accordId: int("accordId").notNull(),
+  ingredientId: int("ingredientId").notNull(),
+  percentage: decimal("percentage", { precision: 8, scale: 4 }).notNull(),
+});
+
+export type AccordIngredient = typeof accordIngredients.$inferSelect;
+export type InsertAccordIngredient = typeof accordIngredients.$inferInsert;

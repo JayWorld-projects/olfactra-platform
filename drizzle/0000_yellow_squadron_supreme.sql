@@ -1,3 +1,24 @@
+CREATE TABLE `accord_ingredients` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`accordId` int NOT NULL,
+	`ingredientId` int NOT NULL,
+	`percentage` decimal(8,4) NOT NULL,
+	CONSTRAINT `accord_ingredients_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `accords` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`userId` int NOT NULL,
+	`name` varchar(255) NOT NULL,
+	`description` text,
+	`scentFamily` varchar(100),
+	`estimatedLongevity` varchar(50),
+	`explanation` text,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `accords_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
 CREATE TABLE `favorites` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`userId` int NOT NULL,

@@ -14,6 +14,7 @@ import ImportPage from "./pages/ImportPage";
 import FormulaCompare from "./pages/FormulaCompare";
 import Workspaces from "./pages/Workspaces";
 import CategoryManager from "./pages/CategoryManager";
+import AccordBuilder from "./pages/AccordBuilder";
 
 function Router() {
   return (
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/concept" component={ScentConcept} />
       <Route path="/workspaces" component={Workspaces} />
       <Route path="/categories" component={CategoryManager} />
+      <Route path="/accord-builder" component={AccordBuilder} />
       <Route path="/import" component={ImportPage} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

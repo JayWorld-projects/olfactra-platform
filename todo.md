@@ -362,3 +362,61 @@
   - Library: IFRA Limit label + input now red in add ingredient form
   - ImportPage: IFRA column header + cell values now red
   - FormulaCompare: ifraLimit only in type definition, not rendered — no change needed
+
+## FEATURE: ACCORD BUILDER AI
+
+### Phase 1: Data Model
+- [x] Schema: Create accords table (id, userId, name, description, scentFamily, estimatedLongevity, explanation, createdAt)
+- [x] Schema: Create accord_ingredients table (id, accordId, ingredientId, percentage)
+- [x] Push migration with no breaking changes
+
+### Phase 2: Server CRUD
+- [ ] Server: List accords procedure (with ingredients populated)
+- [ ] Server: Get single accord procedure
+- [ ] Server: Save accord procedure
+- [ ] Server: Delete accord procedure
+- [ ] Server: Update accord procedure
+
+### Phase 3: AI Accord Generation
+- [x] Server: Generate accord from prompt procedure
+- [x] Server: Generate variations (3-5) from prompt
+- [x] Server: Only use ingredients from user's library
+- [x] Server: Reference ingredient metadata (category, description, pyramid position, longevity)
+- [x] Server: Each accord has 3-7 ingredients with percentages summing to 100%
+- [x] Server: Include educational explanation for each accord
+- [x] Server: Include dominant scent family and estimated longevity
+
+### Phase 4: Accord Builder Page UI
+- [x] UI: New /accord-builder route
+- [x] UI: Prompt field with placeholder "Create a creamy sandalwood accord"
+- [x] UI: Generate Accord button (with variation count selector 1-5)
+- [x] UI: Generate Variations via variation count selector
+- [x] UI: Display area for generated accord cards (expandable)
+- [x] UI: Each card shows: name, ingredient list with %, scent family, longevity, explanation
+- [x] UI: "Save Accord" button on each card
+- [x] UI: "Send to Formula Builder" button on each card
+- [x] UI: Loading states during AI generation
+- [x] UI: Example prompt suggestions (quick-fill buttons)
+
+### Phase 5: Accord Library
+- [x] UI: Saved accords section/tab on Accord Builder page
+- [x] UI: List saved accords with name, description, ingredient count, date
+- [x] UI: Click to expand/view accord details
+- [x] UI: Delete saved accord
+- [x] UI: Send saved accord to Formula Builder
+
+### Phase 6: Formula Builder Integration
+- [x] Server: Create formula from accord procedure (creates new formula draft with accord ingredients)
+- [x] UI: "Send to Formula Builder" creates new formula draft and navigates to it
+- [x] Verify: Existing formula logic unchanged (no existing code modified)
+
+### Phase 7: Navigation
+- [x] Nav: Add "Accord Builder" to sidebar navigation (Music icon)
+- [x] Route: Register /accord-builder in App.tsx
+
+### Quality Bar
+- [x] Tests: Accord generation procedure (3 tests passing)
+- [x] Tests: Accord save/delete operations (3 tests passing)
+- [x] Tests: Accord to formula insertion (1 test passing)
+- [x] Verify: All 78 tests pass across 7 test files
+- [x] Verify: Server compiles cleanly (TypeScript: No errors)

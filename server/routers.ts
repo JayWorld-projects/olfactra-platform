@@ -20,6 +20,7 @@ import {
   listIngredientDilutions, addIngredientDilution, updateIngredientDilution, deleteIngredientDilution,
   listIngredientCategories, createIngredientCategory, updateIngredientCategory, deleteIngredientCategory,
   getIngredientCountByCategory, renameIngredientCategory,
+  listAccords, getAccord, saveAccord, deleteAccord, updateAccord,
 } from "./db";
 import { invokeLLM } from "./_core/llm";
 import { formulaImportRouter } from "./formulaImport";
@@ -1074,6 +1075,185 @@ Return JSON:
         } catch {
           return { suggestions: [] };
         }
+      }),
+  }),
+
+  accord: router({
+    list: protectedProcedure.query(({ ctx }) => listAccords(ctx.user.id)),
+
+    get: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(({ ctx, input }) => getAccord(input.id, ctx.user.id)),
+
+    save: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        description: z.string().optional(),
+        scentFamily: z.string().optional(),
+        estimatedLongevity: z.string().optional(),
+        explanation: z.string().optional(),
+        ingredients: z.array(z.object({
+          ingredientId: z.number(),
+          percentage: z.string(),
+        })).min(1),
+      }))
+      .mutation(({ ctx, input }) => {
+        const { ingredients, ...data } = input;
+        return saveAccord(ctx.user.id, data, ingredients);
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(({ ctx, input }) => deleteAccord(input.id, ctx.user.id)),
+
+    generate: protectedProcedure
+      .input(z.object({
+        prompt: z.string().min(1),
+        variationCount: z.number().min(1).max(5).default(3),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Fetch all user ingredients for library filtering
+        const allIngredients = await listIngredients(ctx.user.id);
+        if (allIngredients.length === 0) throw new Error("Your ingredient library is empty. Add ingredients first.");
+
+        const ingredientList = allIngredients.map(i =>
+          `- ID:${i.id} "${i.name}" (Category: ${i.category || "N/A"}, Description: ${(i.description || "").slice(0, 80)}, Pyramid: ${i.pyramidPosition || "N/A"}, Longevity: ${i.longevity ?? "N/A"}/5)`
+        ).join("\n");
+
+        const prompt = `You are a master perfumer specializing in accord creation. A user wants to create fragrance accords based on this concept:
+
+"${input.prompt}"
+
+You MUST use ONLY ingredients from the user's personal library listed below. Do NOT invent or suggest ingredients not in this list.
+
+Available ingredients:
+${ingredientList}
+
+Generate exactly ${input.variationCount} distinct accord variations. Each accord should:
+- Contain 3-7 ingredients
+- Have percentages that sum to exactly 100%
+- Include a creative name
+- Include a dominant scent family classification
+- Include an estimated longevity (e.g., "4-6 hours", "8+ hours")
+- Include a short educational explanation of why these ingredients work together
+
+Return a JSON object with this structure:
+{
+  "accords": [
+    {
+      "name": "Creative accord name",
+      "description": "Brief poetic description of the accord",
+      "scentFamily": "Dominant scent family (e.g., Amber, Woody, Floral, Citrus, etc.)",
+      "estimatedLongevity": "Estimated wear time",
+      "explanation": "Educational explanation of why these ingredients create this accord",
+      "ingredients": [
+        { "ingredientId": <number>, "name": "<ingredient name>", "percentage": "<percentage as string>" }
+      ]
+    }
+  ]
+}`;
+
+        const result = await invokeLLM({
+          messages: [
+            { role: "system", content: "You are a master perfumer. Return ONLY valid JSON. Use ONLY ingredients from the provided list. Each accord must have 3-7 ingredients with percentages summing to 100%." },
+            { role: "user", content: prompt },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "accord_generation",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  accords: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        name: { type: "string" },
+                        description: { type: "string" },
+                        scentFamily: { type: "string" },
+                        estimatedLongevity: { type: "string" },
+                        explanation: { type: "string" },
+                        ingredients: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              ingredientId: { type: "number" },
+                              name: { type: "string" },
+                              percentage: { type: "string" },
+                            },
+                            required: ["ingredientId", "name", "percentage"],
+                            additionalProperties: false,
+                          },
+                        },
+                      },
+                      required: ["name", "description", "scentFamily", "estimatedLongevity", "explanation", "ingredients"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ["accords"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const rawContent = result.choices[0]?.message?.content;
+        const content = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent) || "{}";
+        try {
+          const parsed = JSON.parse(content);
+          // Validate: only keep ingredients that exist in the user's library
+          const validIds = new Set(allIngredients.map(i => i.id));
+          parsed.accords = (parsed.accords || []).map((accord: any) => ({
+            ...accord,
+            ingredients: (accord.ingredients || []).filter((ing: any) => validIds.has(ing.ingredientId)),
+          }));
+          return parsed;
+        } catch {
+          return { accords: [] };
+        }
+      }),
+
+    sendToFormula: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        description: z.string().optional(),
+        ingredients: z.array(z.object({
+          ingredientId: z.number(),
+          percentage: z.string(),
+        })).min(1),
+        totalWeight: z.string().default("10"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Create a new formula draft from the accord
+        const formulaId = await createFormula({
+          userId: ctx.user.id,
+          name: `${input.name} (Accord)`,
+          description: input.description || `Generated from accord: ${input.name}`,
+          status: "draft",
+          sourceType: "accord",
+        });
+        // Add ingredients with weights calculated from percentages
+        const totalWeight = parseFloat(input.totalWeight) || 10;
+        for (const ing of input.ingredients) {
+          const pct = parseFloat(ing.percentage) || 0;
+          const weight = ((pct / 100) * totalWeight).toFixed(3);
+          await addFormulaIngredient({
+            formulaId,
+            ingredientId: ing.ingredientId,
+            weight,
+            dilutionPercent: "100",
+          });
+        }
+        // Update total weight
+        await updateFormula(formulaId, ctx.user.id, {
+          totalWeight: totalWeight.toFixed(3),
+        });
+        return { formulaId };
       }),
   }),
 });
