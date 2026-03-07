@@ -7,12 +7,10 @@ dist/
 build/
 *.dist
 
-# Environment variables
+# Environment variables (keep .env.example)
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
 
 # IDE and editor files
 .vscode/
@@ -108,3 +106,8 @@ temp/
 
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
+
+# Manus platform files (debug collector, query logs)
+.manus/
+.manus-logs/
+client/public/__manus__/

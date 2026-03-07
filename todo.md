@@ -449,3 +449,35 @@
 - [x] Verify: All 89 tests pass across 8 test files
 - [x] Verify: Formula Builder logic unchanged
 - [x] Verify: Server compiles cleanly (TypeScript: No errors)
+
+## PRE-GITHUB SECURITY AND DEPLOYMENT PREP
+
+### Phase 1: Secret Audit
+- [x] Search entire project for hardcoded secrets (API keys, DB creds, auth secrets, tokens)
+- [x] Produce audit report: secrets found, file paths, remediation status (docs/secret-audit-report.md)
+
+### Phase 2: Environment Variable Setup
+- [x] Create .env.example with all required variable names (blank values) — docs/env-example.txt
+- [x] Ensure app loads env vars correctly in dev and production (already uses server/_core/env.ts)
+- [x] No hardcoded secrets found — all already use env var access
+
+### Phase 3: Git Safety
+- [x] Ensure .gitignore covers .env, .env.*, .manus/, .manus-logs/, client/public/__manus__/, build artifacts
+- [x] Confirm .env.example is NOT ignored (!.env.example rule added)
+- [x] Flagged and removed: .manus/db/ query logs (15 files with DB host/user), client/public/__manus__/ debug collector
+
+### Phase 4: Code Updates
+- [x] No code changes needed — all secrets already read from env vars via server/_core/env.ts
+- [x] Behavior identical — no feature logic changes
+- [x] Frontend only exposes VITE_* prefixed vars (public by Vite convention)
+
+### Phase 5: Deployment Readiness
+- [x] Created docs/deployment.md with full env var documentation
+- [x] Documented required vars, purpose, local setup, Cloudflare setup
+- [x] GitHub prep checklist and Cloudflare deployment checklist included
+
+### Phase 6: Validation
+- [x] TypeScript check: 0 errors
+- [x] Test suite: 89 tests passing across 8 files, 0 regressions
+- [x] Production build: successful (37.65s)
+- [x] Final summary produced (see delivery message)
