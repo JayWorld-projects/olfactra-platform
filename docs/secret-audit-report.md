@@ -22,7 +22,7 @@ However, there are **two items requiring remediation** before pushing to GitHub:
 |---|---|
 | **Files** | `.manus/db/db-query-*.json` (15 files) |
 | **Content** | MySQL CLI commands with `--host`, `--user`, and `--database` values for TiDB Cloud |
-| **Example** | `--host gateway04.us-east-1.prod.aws.tidbcloud.com --user 4W3DGjM8p88cMXG.root --database XdWHm4xfoyiJjMtyZcmYpw` |
+| **Example** | `--host <REDACTED>.tidbcloud.com --user <REDACTED>.root --database <REDACTED>` |
 | **Risk** | Exposes database hostname, username, and database name (no password found) |
 | **Remediation** | Add `.manus/` to `.gitignore` and remove from git tracking |
 

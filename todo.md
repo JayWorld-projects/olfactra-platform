@@ -481,3 +481,11 @@
 - [x] Test suite: 89 tests passing across 8 files, 0 regressions
 - [x] Production build: successful (37.65s)
 - [x] Final summary produced (see delivery message)
+
+## GIT HISTORY PURGE (Pre-GitHub Export)
+
+- [x] .manus/db/ and client/public/__manus__/ already removed from git index (previous checkpoint)
+- [x] .gitignore blocks .manus/, .manus-logs/, client/public/__manus__/ going forward
+- [x] Redacted DB hostname, username, and DB name from docs/secret-audit-report.md
+- [x] Note: git-filter-repo history rewrite incompatible with Manus checkpoint system — use BFG Repo Cleaner after GitHub export to purge old commits if needed
+- [x] Save clean checkpoint before GitHub export
