@@ -1,9 +1,0 @@
-{
-  "query": "CREATE TABLE IF NOT EXISTS `accords` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `userId` int NOT NULL,\n  `name` varchar(255) NOT NULL,\n  `description` text,\n  `scentFamily` varchar(100),\n  `estimatedLongevity` varchar(50),\n  `explanation` text,\n  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP\n);\n\nCREATE TABLE IF NOT EXISTS `accord_ingredients` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `accordId` int NOT NULL,\n  `ingredientId` int NOT NULL,\n  `percentage` decimal(8,4) NOT NULL\n);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4W3DGjM8p88cMXG.root --database XdWHm4xfoyiJjMtyZcmYpw --execute CREATE TABLE IF NOT EXISTS `accords` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `userId` int NOT NULL,\n  `name` varchar(255) NOT NULL,\n  `description` text,\n  `scentFamily` varchar(100),\n  `estimatedLongevity` varchar(50),\n  `explanation` text,\n  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP\n);\n\nCREATE TABLE IF NOT EXISTS `accord_ingredients` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `accordId` int NOT NULL,\n  `ingredientId` int NOT NULL,\n  `percentage` decimal(8,4) NOT NULL\n);",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 623
-}
