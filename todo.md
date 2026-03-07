@@ -489,3 +489,22 @@
 - [x] Redacted DB hostname, username, and DB name from docs/secret-audit-report.md
 - [x] Note: git-filter-repo history rewrite incompatible with Manus checkpoint system — use BFG Repo Cleaner after GitHub export to purge old commits if needed
 - [x] Save clean checkpoint before GitHub export
+
+## GITHUB EXPORT (olfactra-platform)
+
+### Phase 1: Export
+- [ ] Verify pre-export state (no secrets in tracked files, .gitignore correct)
+- [ ] Export to GitHub as private repo: olfactra-platform
+
+### Phase 2: Repository Verification
+- [ ] Confirm present: README.md, docs/deployment.md, docs/secret-audit-report.md, .env.example, .gitignore
+- [ ] Confirm absent: .env, .manus/db/, client/public/__manus__/, debug collectors/logs
+
+### Phase 3: Build Validation
+- [ ] Install dependencies
+- [ ] TypeScript compilation: 0 errors
+- [ ] Test suite: all tests passing
+- [ ] Production build: successful
+
+### Phase 4: Final Report
+- [ ] Deliver summary with repo URL, privacy confirmation, build results
