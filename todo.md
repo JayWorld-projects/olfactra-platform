@@ -493,18 +493,41 @@
 ## GITHUB EXPORT (olfactra-platform)
 
 ### Phase 1: Export
-- [ ] Verify pre-export state (no secrets in tracked files, .gitignore correct)
-- [ ] Export to GitHub as private repo: olfactra-platform
+- [x] Verify pre-export state (no secrets in tracked files, .gitignore correct)
+- [x] Export to GitHub as private repo: JayWorld-projects/olfactra-platform
 
 ### Phase 2: Repository Verification
-- [ ] Confirm present: README.md, docs/deployment.md, docs/secret-audit-report.md, .env.example, .gitignore
-- [ ] Confirm absent: .env, .manus/db/, client/public/__manus__/, debug collectors/logs
+- [x] Confirm present: README.md, docs/deployment.md, docs/secret-audit-report.md, docs/env-example.txt, .gitignore (150 files total)
+- [x] Confirm absent: .env, .manus/db/, client/public/__manus__/, debug collectors/logs
+- [x] Zero sensitive strings (DB hostname, username, DB name) in any file on GitHub HEAD
 
 ### Phase 3: Build Validation
-- [ ] Install dependencies
-- [ ] TypeScript compilation: 0 errors
-- [ ] Test suite: all tests passing
-- [ ] Production build: successful
+- [x] Dependencies: installed (pnpm)
+- [x] TypeScript compilation: 0 errors
+- [x] Test suite: 89 tests passing across 8 files
+- [x] Production build: successful (1m 23s)
 
 ### Phase 4: Final Report
-- [ ] Deliver summary with repo URL, privacy confirmation, build results
+- [x] Deliver summary with repo URL, privacy confirmation, build results
+
+## BFG HISTORY CLEANUP PREPARATION
+
+### Phase 1: Identify Paths to Purge
+- [x] Scan all historical commits for .manus/ paths (15 files in .manus/db/)
+- [x] Scan all historical commits for __manus__ paths (1 file: debug-collector.js)
+- [x] Scan all historical commits for any other debug/log artifacts (none found)
+- [x] List all paths requiring removal (16 total files, 4 affected commits)
+
+### Phase 2: Verify .gitignore Protection
+- [x] Confirm .gitignore blocks .manus/, .manus-logs/, client/public/__manus__/
+- [x] No additional paths need blocking
+
+### Phase 3: BFG Cleanup Instructions
+- [x] Provide mirror clone command
+- [x] Provide BFG deletion commands
+- [x] Provide gc/prune commands
+- [x] Provide force-push command
+
+### Phase 4: Validation Steps
+- [x] Provide post-clean verification commands
+- [x] Confirm repo is safe to clean
