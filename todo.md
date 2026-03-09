@@ -546,3 +546,12 @@
 - [x] Tests: 94 total tests passing across 9 files
 - [x] Verify: Wrong password shows error, correct password loads full dashboard with user identity
 - [x] Checkpoint: Save and sync to GitHub
+
+## BUG FIX: Unexpected token '<' (JWS Invalid)
+
+- [x] Root cause: gate token `gate_` prefix not stripped before JWT verification in context.ts
+- [x] Fix: Strip `gate_` prefix from token before passing to `sdk.verifySession()`
+- [x] Fix: Skip gate tokens in `sdk.authenticateRequest()` Authorization header fallback
+- [x] Verify: Zero JWS errors in server logs after fix
+- [x] Verify: Manus preview access works (/?from_webdev=1) with full dashboard
+- [x] Verify: 94 tests passing, 0 TypeScript errors

@@ -17,8 +17,9 @@ async function authenticateViaGateToken(req: CreateExpressContextOptions["req"])
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer gate_")) return null;
 
-  const gateToken = authHeader.slice(7); // Remove "Bearer "
-  const session = await sdk.verifySession(gateToken);
+  const rawToken = authHeader.slice(7); // Remove "Bearer " → "gate_eyJhbG..."
+  const jwtToken = rawToken.slice(5); // Remove "gate_" prefix → "eyJhbG..."
+  const session = await sdk.verifySession(jwtToken);
   if (!session || session.appId !== "password_gate") return null;
 
   // Look up or create the owner user

@@ -264,9 +264,11 @@ class SDKServer {
     // Fallback: check Authorization header (Bearer token)
     if (!sessionCookie) {
       const authHeader = req.headers.authorization;
-      if (authHeader && authHeader.startsWith("Bearer ")) {
+      // TEMPORARY: Password Gate — skip gate tokens; they are handled in context.ts
+      if (authHeader && authHeader.startsWith("Bearer ") && !authHeader.startsWith("Bearer gate_")) {
         sessionCookie = authHeader.slice(7);
       }
+      // END TEMPORARY: Password Gate
     }
 
     const session = await this.verifySession(sessionCookie);
