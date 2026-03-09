@@ -531,3 +531,18 @@
 ### Phase 4: Validation Steps
 - [x] Provide post-clean verification commands
 - [x] Confirm repo is safe to clean
+
+## TEMPORARY PASSWORD GATE (Cloudflare Deployment)
+
+- [x] Server: Add gate.check and gate.verify tRPC procedures (reads GATE_PASSWORD env var)
+- [x] Server: Add GATE_PASSWORD and ownerName to env.ts
+- [x] Server: Gate token authentication in context.ts (JWT with "password_gate" appId)
+- [x] Client: Create PasswordGate component with branded login screen
+- [x] Client: Gate the entire app in App.tsx behind password verification
+- [x] Client: Store gate JWT in localStorage, prefer over session token in main.tsx
+- [x] Client: Disable OAuth redirect when gate token exists (graceful expiry handling)
+- [x] Client: All temporary code marked with // TEMPORARY: Password Gate comments
+- [x] Tests: 5 gate tests (check enabled, correct password, wrong password, empty password, JWT format)
+- [x] Tests: 94 total tests passing across 9 files
+- [x] Verify: Wrong password shows error, correct password loads full dashboard with user identity
+- [x] Checkpoint: Save and sync to GitHub

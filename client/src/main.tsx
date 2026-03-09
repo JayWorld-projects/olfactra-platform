@@ -10,6 +10,9 @@ import { WorkspaceProvider } from "./contexts/WorkspaceContext";
 import "./index.css";
 
 const SESSION_TOKEN_KEY = "app_session_token";
+// TEMPORARY: Password Gate — token key for gate authentication
+const GATE_TOKEN_KEY = "olfactra_gate_token";
+// END TEMPORARY: Password Gate
 
 // Capture session token from URL (set by OAuth callback for browsers blocking third-party cookies)
 function captureSessionToken() {
@@ -34,6 +37,16 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
   const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
 
   if (!isUnauthorized) return;
+
+  // TEMPORARY: Password Gate — don't redirect to OAuth if gate token exists
+  const gateToken = localStorage.getItem(GATE_TOKEN_KEY);
+  if (gateToken) {
+    // Gate token may have expired; clear it and reload to show password screen
+    localStorage.removeItem(GATE_TOKEN_KEY);
+    window.location.reload();
+    return;
+  }
+  // END TEMPORARY: Password Gate
 
   // Clear stored token on auth failure
   localStorage.removeItem(SESSION_TOKEN_KEY);
@@ -63,11 +76,20 @@ const trpcClient = trpc.createClient({
       transformer: superjson,
       fetch(input, init) {
         const headers = new Headers((init as any)?.headers);
-        // Add Authorization header from localStorage as fallback for blocked cookies
-        const token = localStorage.getItem(SESSION_TOKEN_KEY);
-        if (token) {
-          headers.set("Authorization", `Bearer ${token}`);
+        // TEMPORARY: Password Gate — prefer gate token over session token
+        const gateToken = localStorage.getItem(GATE_TOKEN_KEY);
+        if (gateToken) {
+          headers.set("Authorization", `Bearer ${gateToken}`);
+        } else {
+          // END TEMPORARY: Password Gate
+          // Add Authorization header from localStorage as fallback for blocked cookies
+          const token = localStorage.getItem(SESSION_TOKEN_KEY);
+          if (token) {
+            headers.set("Authorization", `Bearer ${token}`);
+          }
+        // TEMPORARY: Password Gate — closing brace for else
         }
+        // END TEMPORARY: Password Gate
         return globalThis.fetch(input, {
           ...(init ?? {}),
           headers,

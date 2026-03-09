@@ -25,6 +25,8 @@ import {
 import { invokeLLM } from "./_core/llm";
 import { formulaImportRouter } from "./formulaImport";
 import { derivedFormulaRouter } from "./derivedFormula";
+import { ENV } from "./_core/env";
+import { sdk } from "./_core/sdk";
 
 export const appRouter = router({
   system: systemRouter,
@@ -36,6 +38,37 @@ export const appRouter = router({
       return { success: true } as const;
     }),
   }),
+
+  // TEMPORARY: Password Gate — remove entire gate router when Manus OAuth redirect domain is whitelisted
+  gate: router({
+    /** Check if the password gate is enabled (GATE_PASSWORD env var is set) */
+    check: publicProcedure.query(() => {
+      return { enabled: Boolean(ENV.gatePassword) };
+    }),
+
+    /** Verify the password and return a signed JWT gate token */
+    verify: publicProcedure
+      .input(z.object({ password: z.string() }))
+      .mutation(async ({ input }) => {
+        if (!ENV.gatePassword) {
+          return { success: false, error: "Password gate is not enabled" } as const;
+        }
+        if (input.password !== ENV.gatePassword) {
+          return { success: false, error: "Incorrect password" } as const;
+        }
+        // Create a gate-specific JWT using the owner's identity
+        const token = await sdk.signSession(
+          {
+            openId: ENV.ownerOpenId || "gate-user",
+            appId: "password_gate",
+            name: ENV.ownerName || "Gate User",
+          },
+          { expiresInMs: 1000 * 60 * 60 * 24 * 30 } // 30 days
+        );
+        return { success: true, token: `gate_${token}` } as const;
+      }),
+  }),
+  // END TEMPORARY: Password Gate
 
   ingredient: router({
     list: protectedProcedure

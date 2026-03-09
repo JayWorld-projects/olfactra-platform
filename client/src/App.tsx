@@ -4,6 +4,8 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+// TEMPORARY: Password Gate — remove import when Manus OAuth redirect domain is whitelisted
+import PasswordGate from "./components/PasswordGate";
 import Home from "./pages/Home";
 import Library from "./pages/Library";
 import IngredientDetail from "./pages/IngredientDetail";
@@ -42,7 +44,11 @@ function App() {
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster />
-          <Router />
+          {/* TEMPORARY: Password Gate — remove <PasswordGate> wrapper when Manus OAuth redirect domain is whitelisted */}
+          <PasswordGate>
+            <Router />
+          </PasswordGate>
+          {/* END TEMPORARY: Password Gate */}
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
