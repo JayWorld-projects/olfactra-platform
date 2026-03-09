@@ -21,6 +21,7 @@ import {
   listIngredientCategories, createIngredientCategory, updateIngredientCategory, deleteIngredientCategory,
   getIngredientCountByCategory, renameIngredientCategory,
   listAccords, getAccord, saveAccord, deleteAccord, updateAccord,
+  getOwnerUser,
 } from "./db";
 import { invokeLLM } from "./_core/llm";
 import { formulaImportRouter } from "./formulaImport";
@@ -56,12 +57,23 @@ export const appRouter = router({
         if (input.password !== ENV.gatePassword) {
           return { success: false, error: "Incorrect password" } as const;
         }
+        // Resolve the owner identity: prefer OWNER_OPEN_ID env var, fall back to DB admin user
+        let ownerOpenId = ENV.ownerOpenId;
+        let ownerName = ENV.ownerName || "Owner";
+        if (!ownerOpenId) {
+          const adminUser = await getOwnerUser();
+          if (!adminUser) {
+            return { success: false, error: "No owner account found" } as const;
+          }
+          ownerOpenId = adminUser.openId;
+          ownerName = adminUser.name || "Owner";
+        }
         // Create a gate-specific JWT using the owner's identity
         const token = await sdk.signSession(
           {
-            openId: ENV.ownerOpenId || "gate-user",
+            openId: ownerOpenId,
             appId: "password_gate",
-            name: ENV.ownerName || "Gate User",
+            name: ownerName,
           },
           { expiresInMs: 1000 * 60 * 60 * 24 * 30 } // 30 days
         );
@@ -699,51 +711,6 @@ IMPORTANT:
           addedCount++;
         }
         return { formulaId, addedCount };
-      }),
-
-    clone: protectedProcedure
-      .input(z.object({
-        id: z.number(),
-        name: z.string().min(1),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const newId = await cloneFormula(input.id, ctx.user.id, input.name);
-        return { id: newId };
-      }),
-
-    compare: protectedProcedure
-      .input(z.object({
-        formulaIdA: z.number(),
-        formulaIdB: z.number(),
-      }))
-      .query(async ({ ctx, input }) => {
-        const [formulaA, formulaB] = await Promise.all([
-          getFormula(input.formulaIdA, ctx.user.id),
-          getFormula(input.formulaIdB, ctx.user.id),
-        ]);
-        if (!formulaA || !formulaB) return null;
-        const [ingredientsA, ingredientsB] = await Promise.all([
-          getFormulaIngredients(formulaA.id),
-          getFormulaIngredients(formulaB.id),
-        ]);
-        return {
-          formulaA: { ...formulaA, ingredients: ingredientsA },
-          formulaB: { ...formulaB, ingredients: ingredientsB },
-        };
-      }),
-
-    generationHistory: protectedProcedure
-      .query(({ ctx }) => listGenerations(ctx.user.id)),
-
-    getGeneration: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .query(({ ctx, input }) => getGeneration(input.id, ctx.user.id)),
-
-    deleteGeneration: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ ctx, input }) => {
-        await deleteGeneration(input.id, ctx.user.id);
-        return { success: true };
       }),
 
     saveFromConcept: protectedProcedure
@@ -1433,222 +1400,88 @@ Return JSON:
         });
         return { formulaId };
       }),
-  }),
 
-  workspace: router({
-    list: protectedProcedure.query(({ ctx }) => listWorkspacesWithCounts(ctx.user.id)),
-
-    get: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .query(async ({ ctx, input }) => {
-        const ws = await getWorkspace(input.id, ctx.user.id);
-        if (!ws) return null;
-        const ingredientIds = await getWorkspaceIngredientIds(ws.id);
-        return { ...ws, ingredientIds };
-      }),
-
-    create: protectedProcedure
+    /** Merge multiple saved accords into a single formula with configurable proportions */
+    mergeToFormula: protectedProcedure
       .input(z.object({
         name: z.string().min(1),
         description: z.string().optional(),
-        ingredientIds: z.array(z.number()),
+        accordSelections: z.array(z.object({
+          accordId: z.number(),
+          proportion: z.number().min(0).max(100), // percentage weight of this accord in the blend
+        })).min(2, "Select at least 2 accords to merge"),
+        totalWeight: z.string().default("10"),
       }))
       .mutation(async ({ ctx, input }) => {
-        const id = await createWorkspace({ name: input.name, description: input.description, userId: ctx.user.id });
-        if (input.ingredientIds.length > 0) {
-          await setWorkspaceIngredients(id, input.ingredientIds);
+        // 1. Fetch all selected accords with their ingredients
+        const accordsData = [];
+        for (const sel of input.accordSelections) {
+          const accord = await getAccord(sel.accordId, ctx.user.id);
+          if (!accord) throw new Error(`Accord ${sel.accordId} not found`);
+          accordsData.push({ accord, proportion: sel.proportion });
         }
-        return { id };
-      }),
 
-    update: protectedProcedure
-      .input(z.object({
-        id: z.number(),
-        name: z.string().min(1).optional(),
-        description: z.string().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const { id, ...data } = input;
-        await updateWorkspace(id, ctx.user.id, data);
-        return { success: true };
-      }),
+        // 2. Normalize proportions to sum to 100
+        const totalProportion = accordsData.reduce((sum, a) => sum + a.proportion, 0);
+        if (totalProportion <= 0) throw new Error("Total proportion must be greater than 0");
+        const normalizedAccords = accordsData.map(a => ({
+          ...a,
+          normalizedProportion: a.proportion / totalProportion,
+        }));
 
-    setIngredients: protectedProcedure
-      .input(z.object({
-        workspaceId: z.number(),
-        ingredientIds: z.array(z.number()),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        // Verify workspace belongs to user
-        const ws = await getWorkspace(input.workspaceId, ctx.user.id);
-        if (!ws) throw new Error("Workspace not found");
-        await setWorkspaceIngredients(input.workspaceId, input.ingredientIds);
-        return { success: true, count: input.ingredientIds.length };
-      }),
+        // 3. Merge ingredients: weight each ingredient by its accord's proportion, deduplicate by ingredientId
+        const mergedMap = new Map<number, { ingredientId: number; percentage: number }>();
+        for (const { accord, normalizedProportion } of normalizedAccords) {
+          for (const ing of accord.ingredients) {
+            const pct = parseFloat(String(ing.percentage)) * normalizedProportion;
+            const existing = mergedMap.get(ing.ingredientId);
+            if (existing) {
+              existing.percentage += pct;
+            } else {
+              mergedMap.set(ing.ingredientId, { ingredientId: ing.ingredientId, percentage: pct });
+            }
+          }
+        }
 
-    delete: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ ctx, input }) => {
-        await deleteWorkspace(input.id, ctx.user.id);
-        return { success: true };
-      }),
+        // 4. Normalize merged percentages to sum to 100
+        const mergedIngredients = Array.from(mergedMap.values());
+        const totalPct = mergedIngredients.reduce((sum, i) => sum + i.percentage, 0);
+        const normalizedIngredients = mergedIngredients.map(i => ({
+          ingredientId: i.ingredientId,
+          percentage: totalPct > 0 ? (i.percentage / totalPct) * 100 : 0,
+        }));
 
-    ingredients: protectedProcedure
-      .input(z.object({ workspaceId: z.number() }))
-      .query(async ({ ctx, input }) => {
-        const ws = await getWorkspace(input.workspaceId, ctx.user.id);
-        if (!ws) return [];
-        const ingredientIds = await getWorkspaceIngredientIds(ws.id);
-        if (ingredientIds.length === 0) return [];
-        const allIngredients = await listIngredients(ctx.user.id);
-        return allIngredients.filter(i => ingredientIds.includes(i.id));
-      }),
-  }),
-
-  version: router({
-    list: protectedProcedure
-      .input(z.object({ formulaId: z.number() }))
-      .query(({ input }) => listFormulaVersions(input.formulaId)),
-
-    get: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .query(({ input }) => getFormulaVersion(input.id)),
-
-    create: protectedProcedure
-      .input(z.object({ formulaId: z.number(), label: z.string().optional() }))
-      .mutation(({ ctx, input }) => createFormulaVersion(input.formulaId, ctx.user.id, input.label)),
-
-    revert: protectedProcedure
-      .input(z.object({ formulaId: z.number(), versionId: z.number() }))
-      .mutation(({ ctx, input }) => revertFormulaToVersion(input.formulaId, input.versionId, ctx.user.id)),
-
-    delete: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(({ input }) => deleteFormulaVersion(input.id)),
-  }),
-
-  substitution: router({
-    suggest: protectedProcedure
-      .input(z.object({
-        ingredientId: z.number(),
-        ingredientName: z.string(),
-        formulaId: z.number(),
-        basis: z.enum(["as-dosed", "neat-active"]).optional().default("neat-active"),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const allIngredients = await listIngredients(ctx.user.id);
-        const formulaItems = await getFormulaIngredients(input.formulaId);
-        const currentIngredient = allIngredients.find(i => i.id === input.ingredientId);
-        if (!currentIngredient) throw new Error("Ingredient not found");
-
-        // Find the formula ingredient entry to get dilution info
-        const currentFi = formulaItems.find(fi => fi.ingredientId === input.ingredientId);
-        const currentDilution = currentFi?.dilutionPercent || "100";
-        const currentWeight = currentFi?.weight || "unknown";
-
-        // Exclude ingredients already in the formula
-        const formulaIngIds = new Set(formulaItems.map(fi => fi.ingredientId));
-        const candidates = allIngredients.filter(i => !formulaIngIds.has(i.id));
-
-        const candidateList = candidates.map(i =>
-          `- ID:${i.id} | ${i.name} | Category: ${i.category || "N/A"} | Longevity: ${i.longevity ?? "N/A"}/5 | Cost: $${i.costPerGram || "N/A"}/g`
-        ).join("\n");
-
-        const basisInstructions = input.basis === "as-dosed"
-          ? `SUBSTITUTION BASIS: AS-DOSED (practical/workflow focus)
-- Prioritize workflow practicality and dilution realities
-- Rank substitutes by how easy they are to work with at the current dosage (${currentWeight}g at ${currentDilution}% dilution)
-- Impact notes should emphasize: weighing and handling, dilution compatibility, solvent considerations, practical shelf life
-- Consider whether the substitute is commonly available at similar dilutions
-- Focus on "drop-in replacement" viability from a practical standpoint`
-          : `SUBSTITUTION BASIS: NEAT/ACTIVE (olfactive equivalence focus)
-- Prioritize olfactive equivalence and formula balance
-- Rank substitutes by how closely they match the olfactory contribution of the neat/active material
-- Impact notes should emphasize: scent strength, diffusion, longevity, accord balance, sillage
-- Consider the active concentration: ${currentWeight}g at ${currentDilution}% dilution = ${(parseFloat(currentWeight || "0") * parseFloat(currentDilution || "100") / 100).toFixed(3)}g neat/active
-- Focus on matching the olfactory "role" this ingredient plays in the formula`;
-
-        const prompt = `You are an expert perfumer. I need substitution suggestions for this ingredient in a formula:
-
-Current ingredient: ${currentIngredient.name}
-- Category: ${currentIngredient.category || "N/A"}
-- Longevity: ${currentIngredient.longevity ?? "N/A"}/5
-- Cost: $${currentIngredient.costPerGram || "N/A"}/g
-- Description: ${currentIngredient.description || "N/A"}
-- Current dosage: ${currentWeight}g at ${currentDilution}% dilution
-
-${basisInstructions}
-
-Available ingredients in the user's library (not already in this formula):
-${candidateList}
-
-Suggest up to 5 substitutes from the available list. For each, explain:
-1. Why it's a good substitute (based on the ${input.basis === "as-dosed" ? "as-dosed practical" : "neat/active olfactive"} criteria above)
-2. How it differs (${input.basis === "as-dosed" ? "practical handling differences, dilution considerations" : "what changes in the scent profile, accord impact"})
-3. Whether it's a cost-effective swap
-
-Return JSON:
-{
-  "suggestions": [
-    {
-      "ingredientId": <number>,
-      "name": "<ingredient name>",
-      "similarity": <number 1-100>,
-      "reason": "<why this is a good substitute>",
-      "difference": "<how the scent will change>",
-      "costComparison": "cheaper" | "similar" | "more expensive"
-    }
-  ]
-}`;
-
-        const result = await invokeLLM({
-          messages: [
-            { role: "system", content: "You are an expert perfumer. Return only valid JSON." },
-            { role: "user", content: prompt },
-          ],
-          response_format: {
-            type: "json_schema",
-            json_schema: {
-              name: "substitution_suggestions",
-              strict: true,
-              schema: {
-                type: "object",
-                properties: {
-                  suggestions: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        ingredientId: { type: "integer" },
-                        name: { type: "string" },
-                        similarity: { type: "integer" },
-                        reason: { type: "string" },
-                        difference: { type: "string" },
-                        costComparison: { type: "string", enum: ["cheaper", "similar", "more expensive"] },
-                      },
-                      required: ["ingredientId", "name", "similarity", "reason", "difference", "costComparison"],
-                      additionalProperties: false,
-                    },
-                  },
-                },
-                required: ["suggestions"],
-                additionalProperties: false,
-              },
-            },
-          },
+        // 5. Create formula
+        const accordNames = accordsData.map(a => a.accord.name).join(" + ");
+        const formulaId = await createFormula({
+          userId: ctx.user.id,
+          name: input.name || `Merged: ${accordNames}`,
+          description: input.description || `Merged from accords: ${accordNames}`,
+          status: "draft",
+          sourceType: "accord",
         });
 
-        const rawContent = result.choices[0]?.message?.content;
-        const content = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent) || "{}";
-        try {
-          const parsed = JSON.parse(content);
-          // Validate ingredient IDs exist
-          const validIds = new Set(candidates.map(c => c.id));
-          parsed.suggestions = (parsed.suggestions || []).filter((s: any) => validIds.has(s.ingredientId));
-          return parsed;
-        } catch {
-          return { suggestions: [] };
+        // 6. Add ingredients with weights
+        const totalWeight = parseFloat(input.totalWeight) || 10;
+        for (const ing of normalizedIngredients) {
+          const weight = ((ing.percentage / 100) * totalWeight).toFixed(3);
+          await addFormulaIngredient({
+            formulaId,
+            ingredientId: ing.ingredientId,
+            weight,
+            dilutionPercent: "100",
+          });
         }
+
+        await updateFormula(formulaId, ctx.user.id, {
+          totalWeight: totalWeight.toFixed(3),
+        });
+
+        return {
+          formulaId,
+          mergedIngredients: normalizedIngredients,
+          accordNames,
+        };
       }),
   }),
 });

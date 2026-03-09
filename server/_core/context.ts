@@ -22,15 +22,27 @@ async function authenticateViaGateToken(req: CreateExpressContextOptions["req"])
   const session = await sdk.verifySession(jwtToken);
   if (!session || session.appId !== "password_gate") return null;
 
-  // Look up or create the owner user
-  let user = await db.getUserByOpenId(session.openId);
+  // CRITICAL: Always resolve to the owner user.
+  // Prefer OWNER_OPEN_ID env var, fall back to first admin user in DB.
+  let ownerOpenId = ENV.ownerOpenId;
+  if (!ownerOpenId) {
+    const adminUser = await db.getOwnerUser();
+    if (adminUser) {
+      ownerOpenId = adminUser.openId;
+    } else {
+      console.error("[Gate Auth] No owner found — neither OWNER_OPEN_ID nor admin user in DB");
+      return null;
+    }
+  }
+
+  let user = await db.getUserByOpenId(ownerOpenId);
   if (!user) {
     await db.upsertUser({
-      openId: session.openId,
-      name: session.name || "Gate User",
+      openId: ownerOpenId,
+      name: ENV.ownerName || "Owner",
       lastSignedIn: new Date(),
     });
-    user = await db.getUserByOpenId(session.openId);
+    user = await db.getUserByOpenId(ownerOpenId);
   }
   return user ?? null;
 }

@@ -87,6 +87,15 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+// TEMPORARY: Password Gate — find the owner/admin user for gate auth fallback
+export async function getOwnerUser() {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.role, 'admin')).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+// END TEMPORARY: Password Gate
+
 // ─── Ingredients ─────────────────────────────────────────────────────────────
 
 export async function listIngredients(userId: number, opts?: { search?: string; category?: string }) {

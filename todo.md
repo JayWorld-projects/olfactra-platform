@@ -555,3 +555,76 @@
 - [x] Verify: Zero JWS errors in server logs after fix
 - [x] Verify: Manus preview access works (/?from_webdev=1) with full dashboard
 - [x] Verify: 94 tests passing, 0 TypeScript errors
+
+## BUG FIX: Data Loss After Gate Login (User Identity Mismatch)
+
+- [x] Root cause: gate.verify created JWT with openId "gate-user" fallback when OWNER_OPEN_ID was empty
+- [x] This created a separate user (id=1530009) with no data, while all data belongs to the original OAuth user (id=1)
+- [x] Fix: context.ts now always resolves gate tokens to OWNER_OPEN_ID, ignoring the JWT's openId
+- [x] Fix: routers.ts gate.verify now requires OWNER_OPEN_ID to be set (no "gate-user" fallback)
+- [x] Fix: Deleted orphan "gate-user" record from database (had zero data)
+- [x] Verify: Gate token returns 282 ingredients and 20 formulas (all owner data)
+- [x] Verify: 94 tests passing, 0 TypeScript errors, production build successful
+
+## FIX: Merge Duplicate Code Blocks
+
+- [x] Restored clean ScentConcept.tsx, FormulaBuilder.tsx, routers.ts from pre-rebase checkpoint
+- [x] Restored clean drizzle/meta/_journal.json
+- [x] Merged user_github/main remote changes
+- [x] Verify: 0 TypeScript errors after restoration
+
+## BUG FIX: OWNER_OPEN_ID not configured on deployed site
+
+- [x] User sees "OWNER_OPEN_ID not configured" error when logging in on deployed site
+- [x] Fix: gate.verify and context.ts now fall back to DB admin user lookup when OWNER_OPEN_ID is not set
+- [x] Added getOwnerUser() helper in db.ts to query first admin user
+- [x] Verify: 94 tests passing, 0 TypeScript errors
+
+## FEATURE: ACCORD MERGING
+
+### Phase 1: Server-Side Merge Logic
+- [x] Server: mergeToFormula procedure in routers.ts (multi-accord input, proportion normalization, ingredient dedup, formula creation)
+- [x] Server: Fetch all selected accords with their ingredients via getAccord
+- [x] Server: Merge ingredients with configurable accord proportions (normalized to sum)
+- [x] Server: Deduplicate shared ingredients (sum their weighted percentages)
+- [x] Server: Normalize merged percentages to sum to 100%
+- [x] Server: Create new formula from merged result via createFormula + addFormulaIngredient
+
+### Phase 2: Accord Merge UI
+- [x] UI: "Merge Accords" button on Accord Builder saved accords tab (appears when 2+ accords saved)
+- [x] UI: Multi-select accords with checkboxes on /accord-merge page
+- [x] UI: Proportion sliders/inputs for each selected accord with real-time normalized percentages
+- [x] UI: Live preview of merged ingredient list with percentages (sorted by % descending)
+- [x] UI: Ingredient deduplication indicator ("shared" badge + source accord names)
+- [x] UI: "Merge N Accords into Formula" button to save merged result
+- [x] UI: Navigate to new formula in Formula Builder after creation
+- [x] Route: /accord-merge in App.tsx
+
+### Quality Bar
+- [x] Tests: Merge with 2 accords, equal proportions
+- [x] Tests: Merge with different proportions (80/20 split)
+- [x] Tests: Ingredient deduplication (shared ingredient sums correctly)
+- [x] Tests: Normalization to 100%
+- [x] Tests: Reject fewer than 2 accords
+- [x] Tests: Default name generation from accord names
+- [x] Verify: All 100 tests pass (94 existing + 6 new merge tests)
+- [x] Verify: 0 TypeScript errors
+
+## FIX: Disable Manus OAuth for Cloudflare deployment (olfactra.ai)
+
+- [x] After gate_token is present and valid, treat user as fully authenticated (no OAuth)
+- [x] Remove/bypass all getLoginUrl() and OAuth redirect calls when gate_token exists
+- [x] Load main Olfactra app directly after password gate (no "Sign In to Get Started" screen)
+- [x] Password gate is the only authentication mechanism
+- [x] Keep implementation simple and reversible (all changes marked with TEMPORARY comments)
+- [x] Confirmed: 4 files changed, no new Cloudflare env vars needed, 100 tests pass, build succeeds
+
+## BUG FIX: Cloudflare build failure — duplicate declarations in ScentConcept.tsx
+
+- [x] Remove duplicate extractIngredientsFromSection function
+- [x] Remove duplicate formatDate function
+- [x] Remove duplicate handleLoadHistory const
+- [x] Remove duplicate visibleSections const
+- [x] Rebased onto user_github/main (linear history, no merge commits)
+- [x] Verify pnpm build succeeds locally (100 tests pass, 0 errors)
+- [ ] Save checkpoint and push to GitHub

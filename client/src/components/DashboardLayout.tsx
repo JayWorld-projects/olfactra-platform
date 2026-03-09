@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { Droplets, LogOut, PanelLeft } from "lucide-react";
+import { Droplets, LogOut, PanelLeft, Loader2 } from "lucide-react";
 import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -57,7 +57,7 @@ export default function DashboardLayout({
     const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
   });
-  const { loading, user } = useAuth();
+  const { loading, user, hasGateToken } = useAuth();
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
@@ -66,6 +66,19 @@ export default function DashboardLayout({
   if (loading) {
     return <DashboardLayoutSkeleton />;
   }
+
+  // TEMPORARY: Password Gate — if gate token exists but user not resolved yet, show loading
+  if (!user && hasGateToken) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="flex flex-col items-center gap-6 p-8">
+          <Loader2 className="size-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading your studio...</p>
+        </div>
+      </div>
+    );
+  }
+  // END TEMPORARY: Password Gate
 
   if (!user) {
     return (

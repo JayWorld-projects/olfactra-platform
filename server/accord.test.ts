@@ -374,3 +374,182 @@ describe("accord.sendToFormula", () => {
     expect(typeof result.formulaId).toBe("number");
   });
 });
+
+describe("accord.mergeToFormula", () => {
+  beforeEach(() => {
+    mockAccords = [];
+    mockAccordIngredients = [];
+    nextAccordId = 1;
+    nextAccordIngId = 1;
+    lastCreatedFormulaId = 100;
+  });
+
+  it("should merge two accords into a single formula", async () => {
+    // Save two accords
+    await caller.accord.save({
+      name: "Amber Base",
+      ingredients: [
+        { ingredientId: 1, percentage: "60" },
+        { ingredientId: 2, percentage: "40" },
+      ],
+    });
+    await caller.accord.save({
+      name: "Vanilla Top",
+      ingredients: [
+        { ingredientId: 2, percentage: "70" },
+        { ingredientId: 3, percentage: "30" },
+      ],
+    });
+
+    const result = await caller.accord.mergeToFormula({
+      name: "Merged Amber Vanilla",
+      accordSelections: [
+        { accordId: 1, proportion: 50 },
+        { accordId: 2, proportion: 50 },
+      ],
+      totalWeight: "10",
+    });
+
+    expect(result).toBeDefined();
+    expect(result.formulaId).toBeDefined();
+    expect(typeof result.formulaId).toBe("number");
+    expect(result.accordNames).toBe("Amber Base + Vanilla Top");
+    expect(result.mergedIngredients).toBeDefined();
+    expect(result.mergedIngredients.length).toBeGreaterThan(0);
+  });
+
+  it("should deduplicate shared ingredients", async () => {
+    // Both accords share ingredientId 2 (Vanillin)
+    await caller.accord.save({
+      name: "Accord A",
+      ingredients: [
+        { ingredientId: 1, percentage: "50" },
+        { ingredientId: 2, percentage: "50" },
+      ],
+    });
+    await caller.accord.save({
+      name: "Accord B",
+      ingredients: [
+        { ingredientId: 2, percentage: "60" },
+        { ingredientId: 3, percentage: "40" },
+      ],
+    });
+
+    const result = await caller.accord.mergeToFormula({
+      name: "Dedup Test",
+      accordSelections: [
+        { accordId: 1, proportion: 50 },
+        { accordId: 2, proportion: 50 },
+      ],
+      totalWeight: "10",
+    });
+
+    // Should have 3 unique ingredients (1, 2, 3), not 4
+    expect(result.mergedIngredients.length).toBe(3);
+    // Ingredient 2 should appear once with combined percentage
+    const ing2 = result.mergedIngredients.find((i) => i.ingredientId === 2);
+    expect(ing2).toBeDefined();
+    // With equal 50/50 proportions: (50*0.5 + 60*0.5) = 55 out of total 100, normalized = 55%
+    expect(ing2!.percentage).toBeGreaterThan(0);
+  });
+
+  it("should normalize merged percentages to sum to 100", async () => {
+    await caller.accord.save({
+      name: "Accord X",
+      ingredients: [
+        { ingredientId: 1, percentage: "80" },
+        { ingredientId: 2, percentage: "20" },
+      ],
+    });
+    await caller.accord.save({
+      name: "Accord Y",
+      ingredients: [
+        { ingredientId: 3, percentage: "100" },
+      ],
+    });
+
+    const result = await caller.accord.mergeToFormula({
+      name: "Normalized Test",
+      accordSelections: [
+        { accordId: 1, proportion: 70 },
+        { accordId: 2, proportion: 30 },
+      ],
+      totalWeight: "10",
+    });
+
+    const totalPct = result.mergedIngredients.reduce((sum, i) => sum + i.percentage, 0);
+    expect(Math.abs(totalPct - 100)).toBeLessThan(0.1);
+  });
+
+  it("should respect different proportions", async () => {
+    await caller.accord.save({
+      name: "Heavy Accord",
+      ingredients: [
+        { ingredientId: 1, percentage: "100" },
+      ],
+    });
+    await caller.accord.save({
+      name: "Light Accord",
+      ingredients: [
+        { ingredientId: 2, percentage: "100" },
+      ],
+    });
+
+    // 80/20 split
+    const result = await caller.accord.mergeToFormula({
+      name: "Proportion Test",
+      accordSelections: [
+        { accordId: 1, proportion: 80 },
+        { accordId: 2, proportion: 20 },
+      ],
+      totalWeight: "10",
+    });
+
+    const ing1 = result.mergedIngredients.find((i) => i.ingredientId === 1);
+    const ing2 = result.mergedIngredients.find((i) => i.ingredientId === 2);
+    expect(ing1).toBeDefined();
+    expect(ing2).toBeDefined();
+    // Ingredient 1 should be ~80%, Ingredient 2 should be ~20%
+    expect(ing1!.percentage).toBeCloseTo(80, 0);
+    expect(ing2!.percentage).toBeCloseTo(20, 0);
+  });
+
+  it("should reject fewer than 2 accords", async () => {
+    await caller.accord.save({
+      name: "Solo Accord",
+      ingredients: [{ ingredientId: 1, percentage: "100" }],
+    });
+
+    await expect(
+      caller.accord.mergeToFormula({
+        name: "Should Fail",
+        accordSelections: [
+          { accordId: 1, proportion: 100 },
+        ],
+        totalWeight: "10",
+      })
+    ).rejects.toThrow();
+  });
+
+  it("should use default name when none provided", async () => {
+    await caller.accord.save({
+      name: "First",
+      ingredients: [{ ingredientId: 1, percentage: "100" }],
+    });
+    await caller.accord.save({
+      name: "Second",
+      ingredients: [{ ingredientId: 2, percentage: "100" }],
+    });
+
+    const result = await caller.accord.mergeToFormula({
+      name: "Custom Merge Name",
+      accordSelections: [
+        { accordId: 1, proportion: 50 },
+        { accordId: 2, proportion: 50 },
+      ],
+    });
+
+    expect(result.formulaId).toBeDefined();
+    expect(result.accordNames).toBe("First + Second");
+  });
+});

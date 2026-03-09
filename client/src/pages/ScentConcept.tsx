@@ -258,88 +258,6 @@ function formatDate(date: Date | string): string {
   });
 }
 
-/**
- * Robust ingredient extractor that handles:
- * - Markdown tables with various column names
- * - Bullet lists with "ingredient - Xg" or "ingredient: Xg" patterns
- * - Bold ingredient names
- */
-function extractIngredientsFromSection(content: string): { ingredientName: string; weight: string }[] {
-  const ingredients: { ingredientName: string; weight: string }[] = [];
-  const seen = new Set<string>();
-  const lines = content.split("\n");
-  let inTable = false;
-  let nameCol = -1;
-  let weightCol = -1;
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-
-    // Table parsing
-    if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
-      const cells = trimmed.split("|").filter(c => c.trim() !== "");
-
-      if (!inTable) {
-        // Header row — find name and weight columns
-        cells.forEach((cell, idx) => {
-          const cl = cell.trim().toLowerCase();
-          if (cl.includes("ingredient") || cl.includes("material") || cl.includes("name") || cl.includes("component") || cl.includes("fragrance") || cl.includes("raw material")) {
-            nameCol = idx;
-          }
-          if (cl.includes("weight") || cl.includes("amount") || cl.includes("grams") || cl.includes("quantity") || cl.includes("(g)") || cl.includes("g)") || cl.includes("drops")) {
-            weightCol = idx;
-          }
-        });
-        inTable = true;
-      } else if (trimmed.includes("---") || trimmed.includes(":--")) {
-        // Separator row
-        continue;
-      } else if (nameCol >= 0 && weightCol >= 0 && nameCol < cells.length && weightCol < cells.length) {
-        const name = cells[nameCol].trim().replace(/\*\*/g, "").replace(/^\s*\d+\.\s*/, "");
-        const weightRaw = cells[weightCol].trim().replace(/[^\d.]/g, "");
-        if (name && weightRaw && !isNaN(parseFloat(weightRaw)) && parseFloat(weightRaw) > 0) {
-          // Skip total/sum rows
-          const nameLower = name.toLowerCase();
-          if (!nameLower.includes("total") && !nameLower.includes("sum") && !nameLower.includes("concentrate")) {
-            const key = name.toLowerCase();
-            if (!seen.has(key)) {
-              seen.add(key);
-              ingredients.push({ ingredientName: name, weight: weightRaw });
-            }
-          }
-        }
-      }
-    } else {
-      if (inTable) {
-        inTable = false;
-        nameCol = -1;
-        weightCol = -1;
-      }
-
-      // Bullet list parsing as fallback: "- Ingredient Name: 2.5g" or "* Ingredient: 2.5 g"
-      const bulletMatch = trimmed.match(/^[-*]\s+\*?\*?(.+?)\*?\*?\s*[:–—-]\s*(\d+\.?\d*)\s*(?:g|grams?|drops?|ml)/i);
-      if (bulletMatch) {
-        const name = bulletMatch[1].trim().replace(/\*\*/g, "");
-        const weight = bulletMatch[2];
-        const nameLower = name.toLowerCase();
-        if (!nameLower.includes("total") && !nameLower.includes("sum") && !seen.has(nameLower)) {
-          seen.add(nameLower);
-          ingredients.push({ ingredientName: name, weight });
-        }
-      }
-    }
-  }
-  return ingredients;
-}
-
-function formatDate(date: Date | string): string {
-  const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleString(undefined, {
-    month: "short", day: "numeric", year: "numeric",
-    hour: "numeric", minute: "2-digit", hour12: true,
-  });
-}
-
 export default function ScentConcept() {
   const { loading } = useAuth();
   const navItems = useNavItems();
@@ -459,22 +377,7 @@ function ScentConceptContent() {
     setShowHistory(false);
   };
 
-  const handleLoadHistory = (gen: { id: number; concept: string; selectedTypes: unknown; content: string; createdAt: Date }) => {
-    setViewingHistoryId(gen.id);
-    setConcept(gen.concept);
-    const types = gen.selectedTypes as ProductTypeKey[];
-    setGeneratedTypes(types);
-    setResult(gen.content);
-    setActiveFilter("all");
-    setGeneratedAt(new Date(gen.createdAt));
-    setShowHistory(false);
-  };
-
-  // Filter sections based on active filter
-  const visibleSections = useMemo(() => {
-    if (activeFilter === "all") return sections;
-    return sections.filter(s => s.key === activeFilter);
-  }, [sections, activeFilter]);
+  const sections = useMemo(() => result ? parseProductSections(result) : [], [result]);
 
   // Filter sections based on active filter
   const visibleSections = useMemo(() => {
@@ -959,80 +862,6 @@ function ScentConceptContent() {
               <CardTitle className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
                 <Lightbulb className="size-3.5" /> Tips
               </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2.5 text-xs text-muted-foreground leading-relaxed">
-              <p className="pl-3 border-l-2 border-border/40">Select only the product types you need for faster, more focused recipes.</p>
-              <p className="pl-3 border-l-2 border-border/40">Click <strong className="text-foreground">Save</strong> on any recipe to add it to your formulas, or <strong className="text-foreground">Save All</strong> for the entire batch.</p>
-              <p className="pl-3 border-l-2 border-border/40">Use the filter tabs to view one product type at a time after generation.</p>
-              <p className="pl-3 border-l-2 border-border/40">All generations are auto-saved to History for later retrieval.</p>
-            </CardContent>
-          </Card>
-
-          {/* Recent History */}
-          {historyItems.length > 0 && (
-            <Card className="bg-card border-border/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold flex items-center gap-2">
-                  <History className="size-4 text-primary" /> Recent
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {historyItems.slice(0, 5).map((gen) => {
-                  const types = gen.selectedTypes as ProductTypeKey[];
-                  const isActive = viewingHistoryId === gen.id;
-                  return (
-                    <button
-                      key={gen.id}
-                      onClick={() => handleLoadHistory(gen)}
-                      className={`w-full text-left p-2.5 rounded-lg border transition-all ${
-                        isActive
-                          ? "bg-primary/10 border-primary/30"
-                          : "border-border/30 hover:border-primary/30 hover:bg-secondary/40"
-                      }`}
-                    >
-                      <p className="text-xs font-medium text-foreground truncate">
-                        {gen.concept.slice(0, 60)}{gen.concept.length > 60 ? "..." : ""}
-                      </p>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <Clock className="size-2.5 text-muted-foreground" />
-                        <span className="text-[10px] text-muted-foreground">{formatDate(gen.createdAt)}</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1 mt-1.5">
-                        {types.slice(0, 4).map(t => {
-                          const pt = PRODUCT_TYPES.find(p => p.key === t);
-                          if (!pt) return null;
-                          const Icon = pt.icon;
-                          return (
-                            <span key={t} className={`${pt.color}`}>
-                              <Icon className="size-3" />
-                            </span>
-                          );
-                        })}
-                        {types.length > 4 && (
-                          <span className="text-[10px] text-muted-foreground">+{types.length - 4}</span>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-                {historyItems.length > 5 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowHistory(true)}
-                    className="w-full text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    View all {historyItems.length} generations
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Tips */}
-          <Card className="bg-card border-border/50">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">Tips</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2.5 text-xs text-muted-foreground leading-relaxed">
               <p className="pl-3 border-l-2 border-border/40">Select only the product types you need for faster, more focused recipes.</p>

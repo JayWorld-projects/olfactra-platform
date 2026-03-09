@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import {
   Sparkles, Music, Save, FlaskConical, Loader2, Trash2,
   Clock, Leaf, ChevronDown, ChevronUp, BookOpen, ArrowRightLeft,
-  Percent, X, Scale, Info, AlertTriangle,
+  Percent, X, Scale, Info, AlertTriangle, Layers,
 } from "lucide-react";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
@@ -374,6 +374,19 @@ function AccordBuilderContent() {
             <div className="text-center py-16 text-muted-foreground">
               <BookOpen className="size-10 mx-auto mb-3 opacity-40" />
               <p className="text-sm">No saved accords yet. Generate and save your first accord.</p>
+            </div>
+          )}
+          {savedAccords.data && savedAccords.data.length >= 2 && (
+            <div className="flex justify-end mb-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setLocation("/accord-merge")}
+              >
+                <Layers className="size-3.5" />
+                Merge Accords
+              </Button>
             </div>
           )}
           {savedAccords.data && savedAccords.data.length > 0 && (

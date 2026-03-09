@@ -38,7 +38,8 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   if (!isUnauthorized) return;
 
-  // TEMPORARY: Password Gate — don't redirect to OAuth if gate token exists
+  // TEMPORARY: Password Gate — if gate token exists, clear it and reload to show password screen.
+  // NEVER redirect to Manus OAuth when a gate token is present.
   const gateToken = localStorage.getItem(GATE_TOKEN_KEY);
   if (gateToken) {
     // Gate token may have expired; clear it and reload to show password screen

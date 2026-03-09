@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { Beaker, BookOpen, FlaskConical, Import, Sparkles, LogIn, Droplets, ArrowRight, Layers, Palette, Music } from "lucide-react";
+import { Beaker, BookOpen, FlaskConical, Import, Sparkles, LogIn, Droplets, ArrowRight, Layers, Palette, Music, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import DashboardLayout from "@/components/DashboardLayout";
 import { DashboardLayoutSkeleton } from "@/components/DashboardLayoutSkeleton";
@@ -24,10 +24,37 @@ export function useNavItems() {
 }
 
 export default function Home() {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated, hasGateToken } = useAuth();
   const [, setLocation] = useLocation();
 
   if (loading) return <DashboardLayoutSkeleton />;
+
+  // TEMPORARY: Password Gate — if gate token exists but auth.me hasn't resolved yet,
+  // show a loading state instead of the OAuth sign-in screen.
+  // The gate token is already being sent as Authorization header by main.tsx,
+  // so auth.me should resolve the user. If it doesn't, show a retry option.
+  if (!isAuthenticated && hasGateToken) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
+        <div className="max-w-lg text-center space-y-6">
+          <div className="flex justify-center">
+            <div className="size-16 rounded-2xl bg-primary/15 flex items-center justify-center ring-1 ring-primary/20">
+              <Droplets className="size-8 text-primary" />
+            </div>
+          </div>
+          <h1 className="text-3xl font-serif font-bold text-foreground">Olfactra</h1>
+          <div className="flex items-center justify-center gap-2 text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            <span>Loading your studio...</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            If this takes too long, try refreshing the page.
+          </p>
+        </div>
+      </div>
+    );
+  }
+  // END TEMPORARY: Password Gate
 
   if (!isAuthenticated) {
     return (
